@@ -1,0 +1,9 @@
+node_modules/
+data/*.json
+data/*.csv
+data/page_*.png
+data/*.pdf
+data/*.png
+*.log
+.env
+.claude/

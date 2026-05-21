@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resultaten - Judo Tournament</title>
+  <style>
+    /* ---- Screen styles ---- */
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --surface2: #0f2a4a;
+      --border: #2a3a5e;
+      --text: #eee;
+      --muted: #888;
+      --info: #3498db;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --gold: #f1c40f;
+      --radius: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Top bar */
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .top-bar-title { font-size: 1.1rem; font-weight: 700; }
+    .top-bar-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 1rem; border: none; border-radius: var(--radius);
+      font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      background: var(--surface2); color: var(--text);
+      text-decoration: none; transition: background 0.15s;
+    }
+    .btn:hover { background: #1a4a80; }
+    .btn-primary { background: var(--info); color: #fff; }
+    .btn-primary:hover { background: #2980b9; }
+
+    /* Main content */
+    .main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+    /* Tournament header */
+    .tournament-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .tournament-header h1 { font-size: 1.6rem; font-weight: 800; }
+    .tournament-header .meta { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+    /* Category section */
+    .category-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .category-header {
+      background: var(--surface2);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .category-header h2 { font-size: 1rem; font-weight: 700; }
+    .format-badge {
+      font-size: 0.75rem; font-weight: 600;
+      padding: 0.2rem 0.55rem; border-radius: 999px;
+      background: var(--info); color: #fff;
+    }
+    .category-body { padding: 1rem; }
+
+    /* Section label */
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted);
+      margin-bottom: 0.5rem; margin-top: 1.25rem;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    /* ---- Poule cross-table ---- */
+    .matrix-wrap { overflow-x: auto; margin-bottom: 0.25rem; }
+
+    .matrix-table { border-collapse: collapse; font-size: 0.8rem; }
+    .matrix-table th,
+    .matrix-table td {
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.45rem;
+      text-align: center;
+      min-width: 2.8rem;
+    }
+    .matrix-table th {
+      background: var(--surface2);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .matrix-table th.name-header {
+      text-align: left;
+      min-width: 8rem;
+      max-width: 12rem;
+    }
+    .matrix-table td.name-cell {
+      text-align: left;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 12rem;
+    }
+    .matrix-table .self {
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .matrix-table .win  { background: rgba(39,174,96,0.15); }
+    .matrix-table .loss { background: rgba(231,76,60,0.12); }
+    .matrix-table .pending-cell { color: var(--muted); }
+    .matrix-table .result { font-weight: 700; font-size: 0.85rem; }
+    .matrix-table .win .result  { color: var(--success); }
+    .matrix-table .loss .result { color: var(--danger); }
+    .matrix-table .method-abbr { font-size: 0.65rem; color: var(--muted); display: block; line-height: 1.2; }
+    .matrix-table .score-col {
+      background: var(--surface2); font-weight: 700; min-width: 2.2rem;
+      border-left: 2px solid var(--border);
+    }
+    .matrix-table .score-rang { color: var(--gold); }
+    .matrix-table th.score-col { color: var(--text); }
+    .name-club { display: block; font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+
+    /* Competitor list below matrix */
+    .comp-list {
+      font-size: 0.8rem; color: var(--muted);
+      margin: 0.6rem 0 1.25rem;
+      column-count: 2; column-gap: 2rem;
+    }
+    .comp-list-item { margin-bottom: 0.15rem; }
+    .comp-list-item .comp-num { font-weight: 700; color: var(--text); margin-right: 0.3rem; }
+
+    /* ---- Schedule table ---- */
+    .schedule-wrap { overflow-x: auto; margin-bottom: 0.25rem; }
+    .schedule-table { border-collapse: collapse; font-size: 0.8rem; }
+    .schedule-table th {
+      background: var(--surface2); color: var(--muted);
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 0.4rem 0.7rem;
+      border: 1px solid var(--border); text-align: center; white-space: nowrap;
+    }
+    .schedule-table td { padding: 0.35rem 0.7rem; border: 1px solid var(--border); vertical-align: middle; }
+    .schedule-table .round-num { text-align: center; font-weight: 700; color: var(--info); min-width: 3rem; }
+    .schedule-table .fight-cell { text-align: center; white-space: nowrap; }
+    .schedule-table .rest-cell  { text-align: center; color: var(--muted); font-style: italic; white-space: nowrap; }
+    .schedule-table .fight-pending { color: var(--muted); }
+    .schedule-table .fight-done .s-winner { font-weight: 700; }
+    .schedule-table .fight-done .s-loser  { text-decoration: line-through; color: var(--muted); }
+    .s-vs { color: var(--muted); margin: 0 0.3rem; font-size: 0.7rem; }
+    .s-pnum { font-weight: 700; color: var(--info); font-size: 0.72rem; margin-right: 0.15rem; }
+
+    /* Standings table */
+    .standings-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 0.5rem; }
+    .standings-table th {
+      background: var(--surface2); color: var(--muted);
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 0.5rem 0.6rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .standings-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); }
+    .standings-table tr:last-child td { border-bottom: none; }
+    .standings-table .rank { font-weight: 700; width: 2rem; text-align: center; }
+    .standings-table .pts { font-weight: 700; color: var(--info); text-align: right; }
+    .rank-gold   { color: #f1c40f; }
+    .rank-silver { color: #bdc3c7; }
+    .rank-bronze { color: #cd7f32; }
+
+    /* ---- Bracket tree ---- */
+    .bracket-section-title {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--info);
+      margin-bottom: 0.5rem; margin-top: 1.25rem;
+      padding-bottom: 0.3rem; border-bottom: 1px solid var(--border);
+    }
+    .bracket-section-title:first-child { margin-top: 0; }
+    @media print {
+      .bracket-page-break { page-break-before: always; }
+    }
+
+    .bracket-tree-wrap { overflow-x: auto; padding-bottom: 0.5rem; }
+
+    .bracket-columns {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0;
+      min-width: max-content;
+      padding: 0.5rem 0;
+    }
+
+    .bracket-col {
+      display: flex;
+      flex-direction: column;
+      min-width: 180px;
+      padding: 0 0.75rem;
+    }
+
+    .bracket-col-header {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted);
+      text-align: center; margin-bottom: 0.5rem;
+    }
+
+    .bracket-spacer { flex: 1; min-height: 6px; }
+
+    /* Fight card (bracket) */
+    .b-fight {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .b-fight.grand-final-card {
+      border-color: var(--gold);
+      box-shadow: 0 0 12px rgba(241,196,15,0.2);
+    }
+    .b-slot {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem; min-height: 28px;
+    }
+    .b-slot:first-child { border-bottom: 1px solid var(--border); }
+    .b-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .b-slot.white-slot .b-dot { background: #e8e8e8; border: 1px solid #666; }
+    .b-slot.blue-slot  .b-dot { background: #1a6fc4; }
+    .b-name {
+      flex: 1; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .b-name.tbd { color: var(--muted); font-style: italic; font-weight: 400; }
+    .b-score { font-size: 0.72rem; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+    .b-slot.winner .b-name  { color: var(--gold); }
+    .b-slot.winner .b-score { color: var(--gold); }
+
+    /* Fight number label */
+    .b-fight-num {
+      font-size: 0.62rem; font-weight: 700; text-align: right;
+      padding: 0.1rem 0.4rem 0;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-display, sans-serif);
+      letter-spacing: 0.04em;
+    }
+
+    /* Grand final label */
+    .gf-label {
+      text-align: center; font-size: 0.7rem; font-weight: 700;
+      color: var(--gold); margin-bottom: 0.3rem; letter-spacing: 0.05em;
+    }
+
+    /* Empty state */
+    .empty { color: var(--muted); font-size: 0.875rem; padding: 0.5rem 0; }
+
+    /* Loading / error */
+    #loadingMsg, #errorMsg { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+    #errorMsg { color: var(--danger); }
+
+    .refresh-info { font-size: 0.8rem; color: var(--muted); }
+
+    /* Print checkbox UI */
+    .print-check-wrap {
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .print-check {
+      width: 16px; height: 16px; cursor: pointer; accent-color: var(--info);
+    }
+    .print-select-label {
+      font-size: 0.78rem; color: var(--muted); cursor: pointer; user-select: none;
+    }
+
+    /* ---- Print styles ---- */
+    @media print {
+      @page { size: A4 landscape; margin: 1cm; }
+
+      body { background: #fff; color: #000; font-size: 8.5pt; }
+      .top-bar { display: none; }
+      /* Tournament header only on first printed page */
+      .tournament-header { display: none; }
+      .main { max-width: 100%; padding: 0; }
+
+      /* Hide non-selected categories */
+      .category-section.no-print { display: none !important; }
+
+      /* Each category on its own page */
+      .category-section {
+        background: #fff; border: 1pt solid #888;
+        border-radius: 0; margin-bottom: 0;
+        page-break-before: always;
+        page-break-inside: avoid;
+      }
+      .category-section:first-of-type { page-break-before: avoid; }
+
+      /* Fit everything to page width */
+      .matrix-wrap, .schedule-wrap { overflow: visible; }
+      .matrix-table { width: 100%; font-size: 7.5pt; table-layout: auto; }
+      .matrix-table th, .matrix-table td { padding: 0.15rem 0.2rem; }
+      .matrix-table th.name-header { min-width: 0; }
+      .matrix-table td.name-cell { max-width: none; white-space: normal; word-break: break-word; }
+      .schedule-table { width: 100%; font-size: 7.5pt; }
+      .print-check-wrap { display: none; }
+
+      /* Force bracket wider than page so JS scaling always triggers for both width AND height */
+      .bracket-tree-wrap { overflow: hidden; }
+      .bracket-columns { min-width: 1350px; transform-origin: top left; }
+      .bracket-col { min-width: 120px; padding: 0 0.3rem; }
+      .b-fight { font-size: 7.5pt; }
+      .b-slot { min-height: 1.4rem; padding: 0.2rem 0.4rem; }
+      .b-name { font-size: 7.5pt; }
+      .category-header { background: #e8e8e8; border-bottom: 1pt solid #888; padding: 0.4rem 0.6rem; }
+      .category-header h2 { color: #000; font-size: 12pt; }
+      .format-badge { background: #555; color: #fff; }
+      .category-body { padding: 0.4rem 0.6rem; }
+      .section-label { color: #555; margin-top: 0.6rem; }
+
+      /* Pouleblad matrix */
+      .matrix-table { width: 100%; }
+      .matrix-table th,
+      .matrix-table td { border: 1pt solid #888; padding: 0.25rem 0.35rem; min-height: 1.6rem; }
+      .matrix-table th { background: #e8e8e8; color: #000; }
+      .matrix-table th.name-header { min-width: 9rem; }
+      .matrix-table td.name-cell { max-width: none; white-space: normal; }
+      .matrix-table .self { background: #d0d0d0; }
+      /* Pending cells: blank with bottom border for writing */
+      .matrix-table .pending-cell { background: #fff; min-height: 1.8rem; }
+      .matrix-table .win  { background: #d4edda !important; }
+      .matrix-table .loss { background: #f8d7da !important; }
+      .matrix-table .win  .result { color: #155724 !important; }
+      .matrix-table .loss .result { color: #721c24 !important; }
+      .matrix-table .method-abbr { color: #555; }
+      /* Score columns */
+      .matrix-table .score-col { background: #f5f5f5 !important; border-left: 2pt solid #555 !important; font-weight: 700; color: #000; }
+      .matrix-table .score-rang { color: #000; }
+      .name-club { color: #555; font-size: 7.5pt; }
+
+      .comp-list { display: none; }
+
+      /* Standings print */
+      .standings-table { margin-top: 0.5rem; }
+      .standings-table th { background: #e8e8e8; color: #000; border-bottom: 1pt solid #888; }
+      .standings-table td { border-bottom: 0.5pt solid #ccc; color: #000; }
+      .standings-table .pts { color: #000; font-weight: 700; }
+      .rank-gold   { font-weight: 700; }
+      .rank-silver { }
+      .rank-bronze { }
+
+      .bracket-section-title { color: #000; border-bottom: 1pt solid #888; }
+
+      /* Bracket tree print */
+      .bracket-tree-wrap { overflow: visible; }
+      .bracket-columns { gap: 0; min-width: unset; flex-wrap: wrap; }
+      .bracket-col { min-width: 130px; padding: 0 0.3rem; }
+      .b-fight { background: #fff !important; border: 1pt solid #888 !important; box-shadow: none !important; }
+      .b-fight.grand-final-card { border: 2pt solid #000 !important; }
+      .b-slot:first-child { border-bottom: 0.5pt solid #ccc; }
+      .b-slot { min-height: 1.6rem; }
+      .b-name { color: #000 !important; white-space: normal; }
+      .b-name.tbd { color: transparent !important; }
+      .b-score { color: #555 !important; }
+      .b-slot.winner .b-name { font-weight: 700; color: #000 !important; }
+      .b-dot { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .b-slot.white-slot .b-dot { background: #ccc !important; border-color: #888 !important; }
+      .b-slot.blue-slot  .b-dot { background: #555 !important; }
+      .gf-label { color: #000 !important; }
+      .empty { color: #555; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="top-bar-title">Resultaten &amp; Loting</div>
+    <div class="top-bar-actions">
+      <span class="refresh-info" id="refreshInfo"></span>
+      <button class="btn" onclick="loadData()">Vernieuwen</button>
+      <button class="btn btn-primary" onclick="printSelected()">Afdrukken selectie</button>
+      <button class="btn" onclick="window.print()">Alles afdrukken</button>
+      <a class="btn" href="/">Home</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="loadingMsg">Laden...</div>
+    <div id="errorMsg" style="display:none">Kon gegevens niet laden. Is de server actief?</div>
+    <div id="content" style="display:none">
+      <div class="tournament-header">
+        <h1 id="tournamentName">—</h1>
+        <div class="meta" id="tournamentMeta"></div>
+      </div>
+      <div id="categoriesContainer"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/results/results.js"></script>
+  <script>
+    // A4 landscape usable: ~1047px wide, ~657px tall (minus headers)
+    // Print CSS forces .bracket-columns to min-width 1350px so scale always < 1,
+    // which means height also scales down proportionally.
+    const PRINT_W = 1047;
+    const PRINT_H = 657;
+    const FORCED_MIN_W = 1350;
+
+    window.addEventListener('beforeprint', () => {
+      document.querySelectorAll('.bracket-tree-wrap').forEach(wrap => {
+        const cols = wrap.querySelector('.bracket-columns');
+        if (!cols) return;
+        const nW = Math.max(parseFloat(cols.dataset.naturalW) || 0, FORCED_MIN_W);
+        const nH = parseFloat(cols.dataset.naturalH) || cols.scrollHeight;
+        const scale = Math.min(PRINT_W / nW, nH > PRINT_H ? PRINT_H / nH : 1);
+        cols.style.transform = `scale(${scale})`;
+        cols.style.transformOrigin = 'top left';
+        wrap.style.height = (nH * scale) + 'px';
+        wrap.style.overflow = 'hidden';
+      });
+    });
+
+    window.addEventListener('afterprint', () => {
+      document.querySelectorAll('.bracket-tree-wrap').forEach(wrap => {
+        const cols = wrap.querySelector('.bracket-columns');
+        if (cols) { cols.style.transform = ''; cols.style.transformOrigin = ''; }
+        wrap.style.height = '';
+        wrap.style.overflow = '';
+      });
+    });
+
+    function printSelected() {
+      const sections = document.querySelectorAll('.category-section');
+      let anyChecked = false;
+      sections.forEach(s => {
+        const cb = s.querySelector('.print-check');
+        const checked = cb && cb.checked;
+        if (checked) anyChecked = true;
+        s.classList.toggle('no-print', !checked);
+      });
+      if (!anyChecked) {
+        alert('Selecteer minstens één categorie om af te drukken.');
+        sections.forEach(s => s.classList.remove('no-print'));
+        return;
+      }
+      window.print();
+      sections.forEach(s => s.classList.remove('no-print'));
+    }
+    window.printSelected = printSelected;
+  </script>
+</body>
+</html>

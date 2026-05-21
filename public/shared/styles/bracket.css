@@ -1,0 +1,326 @@
+/* ============================================================
+   Bracket CSS - Tournament bracket display
+   ============================================================ */
+
+/* ---- Pool / Round Robin ---- */
+.pool-section {
+  margin-bottom: 2rem;
+}
+
+.pool-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.pool-table th {
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.pool-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pool-table tr:hover td {
+  background: rgba(255,255,255,0.03);
+}
+
+.pool-table .rank {
+  color: var(--muted);
+  font-weight: 700;
+  text-align: center;
+  width: 36px;
+}
+
+.pool-table .rank.gold { color: #f1c40f; }
+.pool-table .rank.silver { color: #bdc3c7; }
+.pool-table .rank.bronze { color: #cd6133; }
+
+.pool-table .pts {
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+}
+
+/* ---- Fight results in pool ---- */
+.pool-fights {
+  margin-top: 1rem;
+}
+
+.pool-fight-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+}
+
+.pool-fight-row .pf-white {
+  flex: 1;
+  text-align: right;
+  font-weight: 600;
+}
+
+.pool-fight-row .pf-vs {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.pool-fight-row .pf-blue {
+  flex: 1;
+  text-align: left;
+  font-weight: 600;
+}
+
+.pool-fight-row .pf-method {
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 80px;
+  text-align: center;
+}
+
+.pool-fight-row.winner-white .pf-white {
+  color: var(--gold);
+}
+
+.pool-fight-row.winner-blue .pf-blue {
+  color: var(--gold);
+}
+
+.pool-fight-row.pending {
+  opacity: 0.55;
+}
+
+/* ---- Double Elimination Bracket ---- */
+.bracket-wrapper {
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.bracket-section-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 1rem 0 0.5rem;
+}
+
+.bracket-tree {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  min-width: max-content;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  min-width: 200px;
+  padding: 0 0.75rem;
+  position: relative;
+}
+
+.bracket-round-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bracket-fight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 0.35rem 0;
+  min-width: 180px;
+  transition: border-color 0.2s;
+  position: relative;
+}
+
+.bracket-fight.active-fight {
+  border-color: var(--success);
+  box-shadow: 0 0 12px rgba(39,174,96,0.3);
+}
+
+.bracket-fight.ended {
+  border-color: var(--border);
+}
+
+.bracket-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  min-height: 32px;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.bracket-slot:first-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.bracket-slot .slot-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bracket-slot.white-slot .slot-color {
+  background: var(--white-side);
+  border: 1px solid #666;
+}
+
+.bracket-slot.blue-slot .slot-color {
+  background: var(--blue-side);
+}
+
+.bracket-slot .slot-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bracket-slot .slot-name.tbd {
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.bracket-slot .slot-score {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 20px;
+  text-align: right;
+}
+
+.bracket-slot.winner {
+  background: rgba(241,196,15,0.08);
+}
+
+.bracket-slot.winner .slot-name {
+  color: var(--gold);
+}
+
+.bracket-slot.winner .slot-score {
+  color: var(--gold);
+}
+
+.bracket-bye {
+  opacity: 0.4;
+}
+
+.bracket-bye .slot-name {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Grand final indicator */
+.bracket-fight.grand-final {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(241,196,15,0.2);
+}
+
+.bracket-fight.grand-final::before {
+  content: '★';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+/* Connector lines */
+.bracket-connector {
+  position: absolute;
+  right: -0.75rem;
+  top: 50%;
+  width: 0.75rem;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Loser bracket label */
+.loser-bracket-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 2px dashed var(--border);
+}
+
+/* ---- Bracket grid layout ---- */
+.bracket-columns {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+
+.bracket-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 190px;
+}
+
+.bracket-col-header {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  padding: 0.3rem;
+  background: var(--surface2);
+  border-radius: var(--radius);
+}
+
+.bracket-spacer {
+  flex: 1;
+}

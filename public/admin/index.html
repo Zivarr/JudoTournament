@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Judo Tournament</title>
+  <link rel="stylesheet" href="/shared/styles/base.css">
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .page-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .page-header h1 { font-size: 1.2rem; }
+
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+
+    .main-content {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Pin Modal */
+    #pinModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #pinModal .modal {
+      text-align: center;
+    }
+
+    #pinModal h2 { margin-bottom: 1rem; }
+
+    #pinInput {
+      font-size: 2rem;
+      text-align: center;
+      letter-spacing: 0.3em;
+      width: 180px;
+      margin: 0 auto 1rem;
+      display: block;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.5rem;
+    }
+
+    #pinError { color: var(--danger); margin-bottom: 0.75rem; display: none; }
+
+    /* Tabs */
+    .tabs { margin-bottom: 0; }
+
+    /* competitor table */
+    .competitor-table-wrap { overflow-x: auto; }
+
+    /* category cards */
+    .categories-list { display: flex; flex-direction: column; gap: 1rem; }
+
+    .category-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .category-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .category-card-body { padding: 1rem; }
+
+    .category-meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .category-meta span strong { color: var(--text); }
+
+    .category-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* fight list */
+    .fight-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.4rem;
+      font-size: 0.875rem;
+    }
+
+    .fight-item .fight-num {
+      color: var(--muted);
+      font-weight: 700;
+      min-width: 24px;
+    }
+
+    .fight-item .fight-vs {
+      flex: 1;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .fight-item .fight-white { color: var(--text); }
+    .fight-item .fight-blue { color: var(--blue-side); }
+
+    .fight-item .fight-status {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--muted);
+    }
+
+    .fight-item .fight-status.active { background: rgba(39,174,96,0.2); color: var(--success); }
+    .fight-item .fight-status.ended { background: rgba(231,76,60,0.2); color: var(--danger); }
+
+    .tatami-section { margin-bottom: 2rem; }
+    .tatami-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+
+    /* Tournament chooser cards */
+    .chooser-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .chooser-card.is-active {
+      border-color: var(--success);
+    }
+    .chooser-card-info { flex: 1; min-width: 0; }
+    .chooser-card-name { font-weight: 700; font-size: 1rem; }
+    .chooser-card-meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    .chooser-active-badge {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 0.15rem 0.45rem; border-radius: 999px;
+      background: var(--success); color: #fff;
+    }
+
+    /* CSV textarea */
+    #csvTextarea {
+      width: 100%;
+      height: 180px;
+      font-family: monospace;
+      font-size: 0.875rem;
+      resize: vertical;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Tournament Chooser Modal -->
+  <div id="chooserModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10000;overflow-y:auto;padding:2rem 1rem;">
+    <div style="max-width:560px;margin:0 auto;">
+      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.25rem;">Toernooi selecteren</h2>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.5rem;">Kies een bestaand toernooi of maak een nieuw aan.</p>
+      <div id="chooserList" style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.5rem;"></div>
+      <button class="btn btn-success btn-block" onclick="chooserCreateNew()" style="font-size:1rem;padding:0.75rem;">
+        + Nieuw toernooi aanmaken
+      </button>
+    </div>
+  </div>
+
+  <!-- PIN Modal -->
+  <div id="pinModal">
+    <div class="modal">
+      <h2 data-i18n="enterPin">Voer PIN in</h2>
+      <div id="pinContext" style="color:var(--muted);font-size:0.875rem;margin-bottom:0.75rem;display:none;"></div>
+      <input type="password" id="pinInput" maxlength="8" placeholder="••••" autocomplete="off">
+      <div id="pinError" data-i18n="wrongPin">Onjuiste PIN</div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-primary" style="flex:1" onclick="submitPin()">OK</button>
+        <button class="btn" id="pinBackBtn" style="display:none" onclick="showChooser()">← Terug</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>⚙️ <span data-i18n="admin">Beheerder</span></h1>
+    <div class="header-right">
+      <span id="activeTournamentLabel" style="font-size:0.8rem;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      <button class="btn btn-sm" onclick="showChooser()" title="Wissel toernooi">⇄ Wissel</button>
+      <a href="/" class="btn btn-sm">← Home</a>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="langNl" onclick="switchLang('nl')">NL</button>
+        <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+      </div>
+      <div class="conn-indicator" id="connIndicator" title="WebSocket"></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tournament')" data-i18n="tournamentInfo">Toernooi informatie</button>
+      <button class="tab-btn" onclick="switchTab('competitors')" data-i18n="competitors">Deelnemers</button>
+      <button class="tab-btn" onclick="switchTab('categories')" data-i18n="categories">Categorieën</button>
+      <button class="tab-btn" onclick="switchTab('fights')" data-i18n="fightList">Gevechtenlijst</button>
+    </div>
+
+    <!-- Tab: Tournament -->
+    <div id="tab-tournament" class="tab-panel active">
+      <div class="card mb-2" id="tournamentInfo" style="display:none">
+        <div class="card-title" data-i18n="tournamentInfo">Toernooi informatie</div>
+        <div id="currentTournamentInfo"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" data-i18n="createTournament">Toernooi aanmaken</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="tournamentName">Toernooinaam</label>
+            <input type="text" id="tName" placeholder="Judo Kampioenschap 2026">
+          </div>
+          <div class="form-group">
+            <label data-i18n="date">Datum</label>
+            <input type="date" id="tDate">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="tatamiCount">Aantal tatami's</label>
+            <input type="number" id="tTatamiCount" min="1" max="20" value="2">
+          </div>
+          <div class="form-group">
+            <label data-i18n="fightDuration">Gevechtstijd (minuten)</label>
+            <select id="tFightDuration">
+              <option value="120000">2 min</option>
+              <option value="180000">3 min</option>
+              <option value="240000" selected>4 min</option>
+              <option value="300000">5 min</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label data-i18n="adminPin">Beheerder PIN</label>
+            <input type="text" id="tAdminPin" placeholder="1234" maxlength="8">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="createTournament()">
+          <span data-i18n="createTournament">Toernooi aanmaken</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab: Competitors -->
+    <div id="tab-competitors" class="tab-panel">
+      <div class="flex justify-between items-center mb-2">
+        <h2 style="font-size:1.1rem;font-weight:700" data-i18n="competitors">Deelnemers</h2>
+        <div class="flex gap-1">
+          <button class="btn btn-success" onclick="toggleAddCompetitor()">
+            + <span data-i18n="addCompetitor">Deelnemer toevoegen</span>
+          </button>
+          <button class="btn" onclick="toggleCsvImport()">
+            <span data-i18n="importCsv">CSV importeren</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add form -->
+      <div id="addCompetitorForm" class="card mb-2" style="display:none">
+        <div class="card-title" data-i18n="addCompetitor">Deelnemer toevoegen</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="name">Naam</label>
+            <input type="text" id="cName" placeholder="Voornaam Achternaam">
+          </div>
+          <div class="form-group">
+            <label data-i18n="club">Club</label>
+            <input type="text" id="cClub" placeholder="Judo Club">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="gender">Geslacht</label>
+            <select id="cGender">
+              <option value="M" data-i18n="male">Man</option>
+              <option value="F" data-i18n="female">Vrouw</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label data-i18n="weight">Gewicht (kg)</label>
+            <input type="number" id="cWeight" placeholder="70" step="0.5">
+          </div>
+          <div class="form-group">
+            <label data-i18n="birthYear">Geboortejaar</label>
+            <input type="number" id="cBirthYear" placeholder="2000" min="1950" max="2020">
+          </div>
+        </div>
+        <div class="flex gap-1">
+          <button class="btn btn-primary" onclick="addCompetitor()">
+            <span data-i18n="save">Opslaan</span>
+          </button>
+          <button class="btn" onclick="toggleAddCompetitor()">
+            <span data-i18n="cancel">Annuleren</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CSV Import -->
+      <div id="csvImportForm" class="card mb-2" style="display:none">
+        <div class="card-title" data-i18n="importCsv">CSV importeren</div>
+        <p class="text-muted text-small mb-1" data-i18n="csvFormat">CSV formaat: naam,club,geslacht,gewichtKg,geboortejaar</p>
+        <p class="text-muted text-small mb-1">Voorbeeld: Jan Bakker,Judo Club Leiden,M,73,2001</p>
+        <textarea id="csvTextarea" placeholder="naam,club,geslacht,gewichtKg,geboortejaar&#10;Jan Bakker,Judo Club Leiden,M,73,2001&#10;Anna de Vries,Club Rotterdam,F,57,2003"></textarea>
+        <div class="flex gap-1 mt-1">
+          <button class="btn btn-primary" onclick="importCsv()">
+            <span data-i18n="importCsv">CSV importeren</span>
+          </button>
+          <button class="btn" onclick="toggleCsvImport()">
+            <span data-i18n="cancel">Annuleren</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Competitors table -->
+      <div class="card">
+        <div class="competitor-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-i18n="name">Naam</th>
+                <th data-i18n="club">Club</th>
+                <th data-i18n="gender">Geslacht</th>
+                <th data-i18n="weight">Gewicht</th>
+                <th data-i18n="birthYear">Geboortejaar</th>
+                <th data-i18n="category">Categorie</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="competitorsTbody">
+              <tr><td colspan="8" class="text-muted text-center">Laden...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Categories -->
+    <div id="tab-categories" class="tab-panel">
+      <div class="flex justify-between items-center mb-2">
+        <h2 style="font-size:1.1rem;font-weight:700" data-i18n="categories">Categorieën</h2>
+        <div class="flex gap-1">
+          <button class="btn btn-success" onclick="toggleAddCategory()">
+            + <span data-i18n="addCategory">Categorie toevoegen</span>
+          </button>
+          <button class="btn" onclick="autoGenerateCategories()">
+            <span data-i18n="autoCategories">Auto-categorieën genereren</span>
+          </button>
+          <button class="btn" onclick="autoAssignTatamis()">
+            Tatami auto-indelen
+          </button>
+          <button class="btn btn-primary" onclick="generateAllDraws()">
+            Alle lotingen genereren
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Category Form -->
+      <div id="addCategoryForm" class="card mb-2" style="display:none">
+        <div class="card-title" data-i18n="addCategory">Categorie toevoegen</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="name">Naam</label>
+            <input type="text" id="catName" placeholder="Heren -73kg">
+          </div>
+          <div class="form-group">
+            <label data-i18n="gender">Geslacht</label>
+            <select id="catGender">
+              <option value="M" data-i18n="male">Man</option>
+              <option value="F" data-i18n="female">Vrouw</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Leeftijdscategorie</label>
+            <select id="catAgeCategory">
+              <option value="">— geen —</option>
+              <option value="U7">-7 (5/6 jr)</option>
+              <option value="U9">-9 (7/8 jr)</option>
+              <option value="U11">-11 (9/10 jr)</option>
+              <option value="U13">-13 (11/12 jr)</option>
+              <option value="U15">-15 (v.a. 13 jr)</option>
+              <option value="U18">-18 (v.a. 14 jr)</option>
+              <option value="U21">-21 (v.a. 15 jr)</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Max gewicht (kg)</label>
+            <input type="number" id="catMaxWeight" placeholder="73">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="format">Formaat</label>
+            <select id="catFormat">
+              <option value="roundrobin">Iedereen tegen iedereen</option>
+              <option value="doubleelim">Dubbele uitschakeling</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label data-i18n="tatami">Tatami</label>
+            <select id="catTatami">
+              <option value="1">Tatami 1</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Deelnemers (selecteer)</label>
+          <div id="catCompetitorSelect" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:0.5rem;background:var(--surface2)"></div>
+        </div>
+        <div class="flex gap-1">
+          <button class="btn btn-primary" onclick="addCategory()">
+            <span data-i18n="save">Opslaan</span>
+          </button>
+          <button class="btn" onclick="toggleAddCategory()">
+            <span data-i18n="cancel">Annuleren</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="categoriesList" class="categories-list"></div>
+    </div>
+
+    <!-- Tab: Fights -->
+    <div id="tab-fights" class="tab-panel">
+      <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem" data-i18n="fightList">Gevechtenlijst</h2>
+      <div id="fightsByTatami"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/admin/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overzicht - Judo Tournament</title>
+  <link rel="stylesheet" href="/shared/styles/base.css">
+  <link rel="stylesheet" href="/shared/styles/overview.css">
+  <style>
+    #announcementArea {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+    }
+
+    .announcement {
+      background: #1a6fc4;
+      color: #fff;
+      padding: 0.7rem 1.4rem;
+      border-radius: 8px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      animation: announceIn 0.3s ease;
+      transition: opacity 0.5s ease;
+    }
+
+    .announcement.fading { opacity: 0; }
+
+    @keyframes announceIn {
+      from { transform: translateY(-120%); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+
+    @media print {
+      #announcementArea { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="overview-page">
+    <div class="overview-header">
+      <div class="overview-title" id="overviewTitle">
+        📊 <span data-i18n="overview">Overzicht</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem">
+        <a href="/" style="font-size:0.8rem;color:var(--muted)">Home</a>
+        <div class="lang-toggle">
+          <button class="lang-btn" id="langNl" onclick="switchLang('nl')">NL</button>
+          <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+        </div>
+        <div class="conn-indicator" id="connIndicator"></div>
+      </div>
+    </div>
+
+    <div id="announcementArea"></div>
+    <div class="overview-grid" id="overviewGrid">
+      <div class="text-muted text-center" style="grid-column:1/-1;padding:2rem" data-i18n="loading">Laden...</div>
+    </div>
+  </div>
+
+  <script type="module" src="/overview/overview.js"></script>
+</body>
+</html>

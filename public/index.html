@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Judo Tournament System</title>
+  <link rel="stylesheet" href="/shared/styles/base.css">
+  <style>
+    .landing-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2rem 1rem;
+    }
+
+    .landing-header {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .tournament-title {
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
+      font-weight: 900;
+      font-family: var(--font-display);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-align: center;
+      line-height: 1;
+    }
+
+    .tournament-subtitle {
+      color: var(--muted);
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .server-url-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1.25rem;
+      margin: 1rem 0;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .server-url-box strong {
+      color: var(--info);
+      font-size: 1.1rem;
+    }
+
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 1.5rem;
+    }
+
+    .link-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .link-card:hover {
+      background: var(--surface2);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      text-decoration: none;
+    }
+
+    .link-card .card-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .link-card .card-label {
+      font-size: 1rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .link-card .card-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .link-card.admin-card { border-color: var(--info); }
+    .link-card.admin-card:hover { border-color: var(--info); }
+    .link-card.overview-card { border-color: var(--success); }
+    .link-card.overview-card:hover { border-color: var(--success); }
+    .link-card.tatami-card-link { border-color: var(--border); }
+    .link-card.tatami-card-link:hover { border-color: var(--info); }
+    .link-card.control-card { border-color: var(--warning); }
+    .link-card.control-card:hover { border-color: var(--warning); }
+
+    .section-title {
+      width: 100%;
+      max-width: 900px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .no-tournament-banner {
+      width: 100%;
+      max-width: 900px;
+      background: var(--surface);
+      border: 1px solid var(--warning);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      text-align: center;
+      color: var(--warning);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-page">
+    <div class="landing-header">
+      <div>
+        <div class="tournament-title" id="tournamentTitle">Judo Tournament System</div>
+        <div class="tournament-subtitle" id="tournamentSubtitle"></div>
+      </div>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="langNl" onclick="switchLang('nl')">NL</button>
+        <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+      </div>
+    </div>
+
+    <div class="server-url-box" id="serverUrlBox">
+      <div>Server URL: <strong id="serverUrl"></strong></div>
+      <div style="font-size:0.8rem;margin-top:0.25rem;color:var(--muted)">Share this URL with devices on the same network</div>
+    </div>
+
+    <div id="noTournamentBanner" class="no-tournament-banner" style="display:none">
+      <span data-i18n="noTournament">Geen toernooi aangemaakt</span> — <a href="/admin/">Ga naar beheer</a>
+    </div>
+
+    <div class="section-title">Management</div>
+    <div class="links-grid">
+      <a href="/admin/" class="link-card admin-card">
+        <div class="card-icon">⚙️</div>
+        <div class="card-label" data-i18n="admin">Beheerder</div>
+        <div class="card-desc">Toernooi instellingen, deelnemers, categorieën</div>
+      </a>
+      <a href="/overview/" class="link-card overview-card">
+        <div class="card-icon">📊</div>
+        <div class="card-label" data-i18n="overview">Overzicht</div>
+        <div class="card-desc">Alle tatami's in één overzicht</div>
+      </a>
+    </div>
+
+    <div class="section-title" id="tatamiSection" style="display:none">Tatami Displays</div>
+    <div class="links-grid" id="tatamiLinks"></div>
+
+    <div class="section-title" id="controlSection" style="display:none">Tatami Control</div>
+    <div class="links-grid" id="controlLinks"></div>
+  </div>
+
+  <script type="module">
+    import { t, setLang, getLang, applyTranslations } from '/shared/i18n.js';
+
+    window.switchLang = function(lang) {
+      setLang(lang);
+      applyTranslations();
+      updateLangButtons();
+      renderLinks();
+    };
+
+    function updateLangButtons() {
+      const lang = getLang();
+      document.getElementById('langNl').classList.toggle('active', lang === 'nl');
+      document.getElementById('langEn').classList.toggle('active', lang === 'en');
+    }
+
+    async function init() {
+      updateLangButtons();
+      applyTranslations();
+
+      // Set server URL
+      const serverUrlEl = document.getElementById('serverUrl');
+      serverUrlEl.textContent = window.location.origin;
+
+      try {
+        const res = await fetch('/api/tournament');
+        const data = await res.json();
+
+        if (data.tournament) {
+          document.getElementById('tournamentTitle').textContent = data.tournament.name;
+          document.getElementById('tournamentSubtitle').textContent = data.tournament.date;
+          renderTatamiLinks(data.tournament.tatamiCount);
+        } else {
+          document.getElementById('noTournamentBanner').style.display = 'block';
+        }
+      } catch (e) {
+        console.error('Failed to load tournament:', e);
+      }
+    }
+
+    function renderLinks() {
+      applyTranslations();
+    }
+
+    function renderTatamiLinks(count) {
+      const tatamiSection = document.getElementById('tatamiSection');
+      const controlSection = document.getElementById('controlSection');
+      const tatamiLinks = document.getElementById('tatamiLinks');
+      const controlLinks = document.getElementById('controlLinks');
+
+      tatamiSection.style.display = 'block';
+      controlSection.style.display = 'block';
+
+      tatamiLinks.innerHTML = '';
+      controlLinks.innerHTML = '';
+
+      for (let i = 1; i <= count; i++) {
+        const card = document.createElement('a');
+        card.href = `/tatami/${i}`;
+        card.className = 'link-card tatami-card-link';
+        card.innerHTML = `
+          <div class="card-icon">🥋</div>
+          <div class="card-label">Tatami ${i}</div>
+          <div class="card-desc">Scorebord weergave</div>
+        `;
+        tatamiLinks.appendChild(card);
+
+        const cCard = document.createElement('a');
+        cCard.href = `/control/${i}`;
+        cCard.className = 'link-card control-card';
+        cCard.innerHTML = `
+          <div class="card-icon">🎮</div>
+          <div class="card-label">Bediening ${i}</div>
+          <div class="card-desc">Tatami ${i} bediening</div>
+        `;
+        controlLinks.appendChild(cCard);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

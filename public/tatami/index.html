@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tatami - Judo Tournament</title>
+  <link rel="stylesheet" href="/shared/styles/base.css">
+  <link rel="stylesheet" href="/shared/styles/scoreboard.css">
+  <link rel="stylesheet" href="/shared/styles/bracket.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .top-bar-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Scoreboard section - 60% */
+    .scoreboard-section {
+      flex: 6;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Bracket section - 40% */
+    .bracket-section {
+      flex: 4;
+      min-height: 0;
+      overflow-y: auto;
+      border-top: 2px solid var(--border);
+      background: var(--bg);
+      padding: 0.75rem;
+    }
+
+    .bracket-section-inner {
+      max-width: 100%;
+    }
+
+    /* No-fight state */
+    #noFightDisplay {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: 1rem;
+    }
+
+    #noFightDisplay .tatami-num {
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 900;
+      color: var(--accent-hover);
+      opacity: 0.4;
+    }
+
+    #noFightDisplay .idle-text {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    /* Scoreboard layout */
+    .scoreboard-wrapper {
+      height: 100%;
+    }
+
+    .category-label {
+      flex-shrink: 0;
+    }
+
+    .scoreboard {
+      flex: 1;
+      min-height: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="top-bar-title" id="topBarTitle">Tatami ?</div>
+    <div class="top-bar-right">
+      <a href="/" style="font-size:0.8rem;color:var(--muted)">Home</a>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="langNl" onclick="switchLang('nl')">NL</button>
+        <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+      </div>
+      <div class="conn-indicator" id="connIndicator"></div>
+    </div>
+  </div>
+
+  <!-- No fight display -->
+  <div id="noFightDisplay">
+    <div class="tatami-num" id="tatamiNumDisplay">?</div>
+    <div class="idle-text" data-i18n="noFight">Geen actief gevecht</div>
+  </div>
+
+  <!-- Scoreboard section (hidden until fight starts) -->
+  <div class="scoreboard-section" id="scoreboardSection" style="display:none">
+    <div class="scoreboard-wrapper">
+      <!-- Category label -->
+      <div class="category-label" id="categoryLabel">
+        <span class="cat-name" id="catName">—</span>
+        <span class="fight-round" id="fightRound">—</span>
+      </div>
+
+      <!-- Main scoreboard: white | clock | blue -->
+      <div class="scoreboard">
+        <!-- White side -->
+        <div class="side white" id="whiteSide">
+          <div class="fighter-color-bar"></div>
+          <div class="fighter-name" id="whiteName">—</div>
+          <div class="fighter-club" id="whiteClub"></div>
+
+          <div class="score-row">
+            <div class="score-ippon" id="whiteIppon">I</div>
+            <div class="score-wazaari-container">
+              <div class="score-wazaari" id="whiteWa1">W</div>
+              <div class="score-wazaari" id="whiteWa2">W</div>
+            </div>
+            <div class="score-yuko" id="whiteYuko">
+              <span class="yuko-label">Y</span>
+              <span class="yuko-count" id="whiteYukoCount">0</span>
+            </div>
+          </div>
+
+          <div class="shido-row">
+            <span class="shido-label">Shido</span>
+            <div class="shido-dots">
+              <div class="shido-dot" id="whiteShido1"></div>
+              <div class="shido-dot" id="whiteShido2"></div>
+              <div class="shido-dot" id="whiteShido3"></div>
+            </div>
+          </div>
+
+          <div class="winner-banner" id="whiteWinnerBanner" data-i18n="winner">Winnaar</div>
+        </div>
+
+        <!-- Center clock panel -->
+        <div class="clock-panel">
+          <div class="golden-score-banner" id="goldenScoreBanner" data-i18n="goldenScore">Gouden Score</div>
+          <div class="clock-digits" id="clockDigits">0:00</div>
+          <div class="osaekomi-section" id="osaekomiSection" style="visibility:hidden">
+            <div class="osaekomi-label" data-i18n="osaekomi">Osaekomi</div>
+            <div class="osaekomi-bar-wrap">
+              <div class="osaekomi-bar" id="osaekomiBar"></div>
+            </div>
+            <div class="osaekomi-timer" id="osaekomiTimer">0.0s</div>
+          </div>
+        </div>
+
+        <!-- Blue side -->
+        <div class="side blue" id="blueSide">
+          <div class="fighter-color-bar"></div>
+          <div class="fighter-name" id="blueName">—</div>
+          <div class="fighter-club" id="blueClub"></div>
+
+          <div class="score-row">
+            <div class="score-ippon" id="blueIppon">I</div>
+            <div class="score-wazaari-container">
+              <div class="score-wazaari" id="blueWa1">W</div>
+              <div class="score-wazaari" id="blueWa2">W</div>
+            </div>
+            <div class="score-yuko" id="blueYuko">
+              <span class="yuko-label">Y</span>
+              <span class="yuko-count" id="blueYukoCount">0</span>
+            </div>
+          </div>
+
+          <div class="shido-row">
+            <span class="shido-label">Shido</span>
+            <div class="shido-dots">
+              <div class="shido-dot" id="blueShido1"></div>
+              <div class="shido-dot" id="blueShido2"></div>
+              <div class="shido-dot" id="blueShido3"></div>
+            </div>
+          </div>
+
+          <div class="winner-banner" id="blueWinnerBanner" data-i18n="winner">Winnaar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bracket section -->
+  <div class="bracket-section" id="bracketSection" style="display:none">
+    <div class="bracket-section-inner" id="bracketContent"></div>
+  </div>
+
+  <script type="module" src="/tatami/tatami.js"></script>
+</body>
+</html>

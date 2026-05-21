@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Bediening - Judo Tournament</title>
+  <link rel="stylesheet" href="/shared/styles/base.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .ctrl-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .ctrl-header-title { font-size: 0.95rem; font-weight: 700; }
+    .ctrl-header-right { display: flex; align-items: center; gap: 0.75rem; }
+
+    /* Fight info bar */
+    .fight-info {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+    }
+
+    .fight-info .fi-cat { color: var(--muted); font-style: italic; }
+    .fight-info .fi-white { color: var(--white-side); font-weight: 600; }
+    .fight-info .fi-blue { color: var(--blue-side); font-weight: 600; }
+    .fight-info .fi-vs { color: var(--muted); }
+    .fight-info .fi-clock {
+      margin-left: auto;
+      font-size: 1.2rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    .fight-info .fi-clock.running { color: var(--success); }
+    .fight-info .fi-clock.golden { color: var(--gold); }
+    .fight-info .fi-clock.danger { color: var(--danger); }
+
+    /* No fight message */
+    #noFightMsg {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    /* Control grid */
+    .ctrl-panel {
+      flex: 1;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .ctrl-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .ctrl-section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding: 0 0.25rem;
+    }
+
+    /* Two-column score grid */
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .score-btn {
+      padding: 1rem 0.5rem;
+      font-size: 1rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.1s, opacity 0.1s;
+      touch-action: manipulation;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+    }
+
+    .score-btn:active { transform: scale(0.95); opacity: 0.8; }
+    .score-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .score-btn .btn-sub {
+      font-size: 0.7rem;
+      font-weight: 600;
+      opacity: 0.75;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* White buttons */
+    .btn-white-score {
+      background: linear-gradient(135deg, #d0d0d0, #b8b8b8);
+      color: #1a1a2e;
+      border: 2px solid #e0e0e0;
+    }
+
+    .btn-white-score:hover { background: linear-gradient(135deg, #e0e0e0, #c8c8c8); }
+
+    /* Blue buttons */
+    .btn-blue-score {
+      background: linear-gradient(135deg, #1a6fc4, #155a9e);
+      color: #fff;
+      border: 2px solid #2080d8;
+    }
+
+    .btn-blue-score:hover { background: linear-gradient(135deg, #2080d8, #1a6fc4); }
+
+    /* Full-width buttons */
+    .btn-full {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.1s;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-full:active { transform: scale(0.97); }
+    .btn-full:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-clock-start {
+      background: var(--success);
+      color: #fff;
+      font-size: 1.2rem;
+    }
+
+    .btn-clock-stop {
+      background: var(--danger);
+      color: #fff;
+      font-size: 1.2rem;
+    }
+
+    .btn-osa-white {
+      background: linear-gradient(135deg, #c8c8c8, #a8a8a8);
+      color: #1a1a2e;
+    }
+
+    .btn-osa-blue {
+      background: linear-gradient(135deg, #1660a8, #0d4a80);
+      color: #fff;
+    }
+
+    .btn-osa-break {
+      background: var(--warning);
+      color: #1a1a2e;
+    }
+
+    .btn-undo {
+      background: var(--accent);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-next {
+      background: var(--info);
+      color: #fff;
+    }
+
+    .btn-ref-white {
+      background: linear-gradient(135deg, #d0d0d0, #a8a8a8);
+      color: #1a1a2e;
+    }
+
+    .btn-ref-blue {
+      background: linear-gradient(135deg, #1a6fc4, #0d4a80);
+      color: #fff;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0.25rem 0;
+    }
+
+    /* Osaekomi active indicator */
+    .osa-active-badge {
+      display: none;
+      background: var(--warning);
+      color: #1a1a2e;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+    }
+
+    .osa-active-badge.show { display: inline-block; }
+
+    /* PIN Modal */
+    #pinModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #pinModal .modal { text-align: center; }
+    #pinModal h2 { margin-bottom: 1rem; }
+
+    #ctrlPinInput {
+      font-size: 2rem;
+      text-align: center;
+      letter-spacing: 0.3em;
+      width: 180px;
+      margin: 0 auto 1rem;
+      display: block;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.5rem;
+    }
+
+    #ctrlPinError { color: var(--danger); margin-bottom: 0.75rem; display: none; }
+  </style>
+</head>
+<body>
+  <!-- PIN Modal -->
+  <div id="pinModal">
+    <div class="modal">
+      <h2 data-i18n="enterPin">Voer PIN in</h2>
+      <input type="password" id="ctrlPinInput" maxlength="8" placeholder="••••" autocomplete="off">
+      <div id="ctrlPinError" data-i18n="wrongPin">Onjuiste PIN</div>
+      <button class="btn btn-primary btn-block" onclick="submitCtrlPin()">OK</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="ctrl-header">
+    <div class="ctrl-header-title" id="ctrlTitle">Bediening Tatami ?</div>
+    <div class="ctrl-header-right">
+      <a href="/" style="font-size:0.8rem;color:var(--muted)">Home</a>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="langNl" onclick="switchLang('nl')">NL</button>
+        <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+      </div>
+      <div class="conn-indicator" id="connIndicator"></div>
+    </div>
+  </div>
+
+  <!-- Fight info -->
+  <div class="fight-info" id="fightInfoBar">
+    <span class="fi-cat" id="fightCat">—</span>
+    <span class="fi-white" id="fightWhite">—</span>
+    <span class="fi-vs">vs</span>
+    <span class="fi-blue" id="fightBlue">—</span>
+    <span class="fi-clock" id="fightClock">0:00</span>
+    <span class="osa-active-badge" id="osaActiveBadge">OSA</span>
+  </div>
+
+  <div id="noFightMsg" style="display:none">
+    <span data-i18n="noFight">Geen actief gevecht</span>
+  </div>
+
+  <!-- Control Panel -->
+  <div class="ctrl-panel" id="ctrlPanel">
+    <!-- Scoring -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-label">Score</div>
+      <div class="score-grid">
+        <button class="score-btn btn-white-score" onclick="score('ippon','white')">
+          <span data-i18n="ippon">Ippon</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('ippon','blue')">
+          <span data-i18n="ippon">Ippon</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('wazaari','white')">
+          <span data-i18n="wazaAri">Waza-ari</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('wazaari','blue')">
+          <span data-i18n="wazaAri">Waza-ari</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('yuko','white')">
+          <span data-i18n="yuko">Yuko</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('yuko','blue')">
+          <span data-i18n="yuko">Yuko</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('shido','white')">
+          <span data-i18n="shido">Shido</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('shido','blue')">
+          <span data-i18n="shido">Shido</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('hansoku','white')">
+          <span data-i18n="hansokuMake">Hansoku-make</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('hansoku','blue')">
+          <span data-i18n="hansokuMake">Hansoku-make</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Osaekomi -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-label" data-i18n="osaekomi">Osaekomi</div>
+      <div class="score-grid">
+        <button class="btn-full btn-osa-white" onclick="osaekomi('white')">
+          <span data-i18n="osaekomiWhite">Osaekomi Wit</span>
+        </button>
+        <button class="btn-full btn-osa-blue" onclick="osaekomi('blue')">
+          <span data-i18n="osaekomiBlue">Osaekomi Blauw</span>
+        </button>
+      </div>
+      <button class="btn-full btn-osa-break" onclick="osaekomiBreak()">
+        <span data-i18n="breakHold">Houdgreep breken</span>
+      </button>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Clock -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-label" data-i18n="start">Klok</div>
+      <div id="clockBtnWrap">
+        <button class="btn-full btn-clock-start" id="btnClockStart" onclick="clockAction()">
+          ▶ <span data-i18n="startClock">Klok starten</span>
+        </button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Undo -->
+    <div class="ctrl-section">
+      <button class="btn-full btn-undo" onclick="undo()">
+        ↩ <span data-i18n="undo">Ongedaan maken</span>
+      </button>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Referee decision -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-label" data-i18n="refereeDecision">Scheidsrechterbeslissing</div>
+      <div class="score-grid">
+        <button class="btn-full btn-ref-white" onclick="refereeDecision('white')">
+          <span data-i18n="refereeDecisionWhite">Scheidsrechterbeslissing (Wit)</span>
+        </button>
+        <button class="btn-full btn-ref-blue" onclick="refereeDecision('blue')">
+          <span data-i18n="refereeDecisionBlue">Scheidsrechterbeslissing (Blauw)</span>
+        </button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Next fight -->
+    <div class="ctrl-section">
+      <button class="btn-full btn-next" onclick="nextFight()">
+        ⏭ <span data-i18n="nextFight">Volgende gevecht</span>
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="/control/control.js"></script>
+</body>
+</html>

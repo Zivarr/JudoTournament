@@ -1,0 +1,405 @@
+/* ============================================================
+   Scoreboard CSS - Large display for tatami screens
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap');
+
+.scoreboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* Category label at top */
+.category-label {
+  background: var(--surface);
+  padding: 0.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  border-bottom: 2px solid var(--border);
+  min-height: 48px;
+}
+
+.category-label .cat-name {
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  font-weight: 800;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.category-label .fight-round {
+  font-size: clamp(0.75rem, 1.5vw, 1rem);
+  color: var(--muted);
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Main scoreboard: two side panels + center clock */
+.scoreboard {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ---- Side panels ---- */
+.side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(0.75rem, 2vw, 2rem);
+  position: relative;
+  transition: background 0.3s;
+}
+
+.side.white {
+  background: linear-gradient(160deg, #1e1e24 0%, #14141a 100%);
+  border-right: 3px solid var(--border);
+}
+
+.side.blue {
+  background: linear-gradient(160deg, #0d1e3a 0%, #080f1e 100%);
+  border-left: 3px solid var(--border);
+}
+
+.side.white.winner-highlight {
+  background: linear-gradient(160deg, #24241a 0%, #1a1a10 100%);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 60px rgba(245,158,11,0.1);
+}
+
+.side.blue.winner-highlight {
+  background: linear-gradient(160deg, #0d2238 0%, #081524 100%);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 60px rgba(245,158,11,0.1);
+}
+
+/* Fighter info */
+.fighter-color-bar {
+  height: 6px;
+  border-radius: 3px;
+  margin-bottom: 0.75rem;
+  background: var(--white-side);
+}
+
+.side.blue .fighter-color-bar {
+  background: var(--blue-side);
+}
+
+.fighter-name {
+  font-size: clamp(1.6rem, 4.5vw, 4rem);
+  font-weight: 900;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--text);
+  word-break: break-word;
+  margin-bottom: 0.25rem;
+}
+
+.fighter-club {
+  font-size: clamp(0.75rem, 1.5vw, 1.05rem);
+  color: var(--muted);
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+/* Score row */
+.score-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+/* Ippon badge */
+.score-ippon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
+  font-size: clamp(1rem, 2.5vw, 1.8rem);
+  font-weight: 900;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.25em 0.7em;
+  border-radius: 4px;
+  min-width: 2.5em;
+  text-align: center;
+  opacity: 0.15;
+  transition: opacity 0.3s, transform 0.2s;
+}
+
+.score-ippon.scored {
+  opacity: 1;
+  transform: scale(1.05);
+  background: #ef4444;
+  box-shadow: 0 0 24px rgba(239,68,68,0.6);
+}
+
+/* Waza-ari badges */
+.score-wazaari-container {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.score-wazaari {
+  width: clamp(1.4rem, 3vw, 2.5rem);
+  height: clamp(1.4rem, 3vw, 2.5rem);
+  border-radius: var(--radius);
+  border: 2px solid var(--warning);
+  background: transparent;
+  transition: background 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.6rem, 1.5vw, 1rem);
+  font-weight: 700;
+  color: transparent;
+}
+
+.score-wazaari.scored {
+  background: var(--warning);
+  color: #1a1a2e;
+  transform: scale(1.08);
+}
+
+/* Yuko count */
+.score-yuko {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.2rem 0.5rem;
+  font-size: clamp(0.7rem, 1.5vw, 1rem);
+  color: var(--text);
+}
+
+.score-yuko .yuko-label {
+  color: var(--muted);
+  font-size: 0.75em;
+}
+
+.score-yuko .yuko-count {
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
+/* Shido dots */
+.shido-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.shido-label {
+  font-size: clamp(0.65rem, 1.3vw, 0.9rem);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.shido-dots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.shido-dot {
+  width: clamp(0.6rem, 1.5vw, 1rem);
+  height: clamp(0.6rem, 1.5vw, 1rem);
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  background: transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.shido-dot.filled {
+  background: var(--warning);
+  border-color: var(--warning);
+}
+
+.shido-dot.hansoku {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Winner banner */
+.winner-banner {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  background: var(--gold);
+  color: #0a0a0a;
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-weight: 900;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  padding: 0.25em 0.9em;
+  border-radius: 4px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.7), 0 0 0 3px rgba(245,158,11,0.3);
+  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.winner-banner.show {
+  display: block;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes popIn {
+  from { transform: translate(-50%, -50%) rotate(-5deg) scale(0.5); opacity: 0; }
+  to   { transform: translate(-50%, -50%) rotate(-5deg) scale(1);   opacity: 1; }
+}
+
+/* ---- Center clock panel ---- */
+.clock-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(160px, 18vw, 280px);
+  padding: 1rem 0.75rem;
+  background: #111115;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  position: relative;
+  gap: 0.75rem;
+}
+
+.clock-digits {
+  font-size: clamp(3rem, 8vw, 8rem);
+  font-weight: 900;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.clock-digits.running {
+  color: var(--success);
+}
+
+.clock-digits.danger {
+  color: var(--danger);
+  animation: pulse-clock 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-clock {
+  from { opacity: 1; }
+  to   { opacity: 0.6; }
+}
+
+.golden-score-banner {
+  display: none;
+  background: var(--gold);
+  color: #0a0a0a;
+  font-size: clamp(0.7rem, 1.5vw, 1rem);
+  font-weight: 900;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  padding: 0.3rem 0.9rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: gsBlink 1.2s ease-in-out infinite alternate;
+}
+
+.golden-score-banner.show {
+  display: block;
+}
+
+@keyframes gsBlink {
+  from { background: var(--gold); }
+  to   { background: #c9a000; }
+}
+
+/* Osaekomi bar */
+.osaekomi-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.osaekomi-label {
+  font-size: clamp(0.6rem, 1.2vw, 0.85rem);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.osaekomi-bar-wrap {
+  width: 100%;
+  background: var(--surface2);
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.osaekomi-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--info), var(--warning), var(--danger));
+  border-radius: 999px;
+  transition: width 0.2s linear;
+}
+
+.osaekomi-timer {
+  font-size: clamp(1rem, 2.5vw, 1.8rem);
+  font-weight: 900;
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  color: var(--warning);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.osaekomi-timer.hidden { display: none; }
+
+/* No fight placeholder */
+.no-fight-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: var(--muted);
+}
+
+.no-fight-placeholder .placeholder-icon {
+  font-size: 4rem;
+  opacity: 0.3;
+}
+
+.no-fight-placeholder .placeholder-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
