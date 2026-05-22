@@ -12,7 +12,15 @@ document.title = `Tatami ${tatamiNum} - Judo Tournament`;
 let state = { tournament: null, competitors: [], categories: [], pools: [], fights: [], activeFightByTatami: {} };
 let currentFight = null;
 let currentFightId = null;
-let osaekomiInterval = null;
+
+// Clock interpolation
+let clockState = null;
+let clockReceivedAt = 0;
+let clockRafId = null;
+
+// Osaekomi rAF
+let osaekomiRafId = null;
+let osaekomiStartedAt = 0;
 
 // ---- Lang ----
 window.switchLang = function(lang) {
@@ -69,18 +77,18 @@ ws.on('fight:score', (data) => {
 
 ws.on('fight:clock', (data) => {
   if (data.fightId !== currentFightId) return;
-  updateClock(data.clock);
+  onClockUpdate(data.clock);
   if (data.osaekomi) updateOsaekomi(data.osaekomi);
 });
 
 ws.on('clock:started', (data) => {
   if (data.fightId !== currentFightId) return;
-  updateClock(data.clock);
+  onClockUpdate(data.clock);
 });
 
 ws.on('clock:stopped', (data) => {
   if (data.fightId !== currentFightId) return;
-  updateClock(data.clock);
+  onClockUpdate(data.clock);
 });
 
 ws.on('fight:osaekomi', (data) => {
@@ -91,12 +99,13 @@ ws.on('fight:osaekomi', (data) => {
 ws.on('fight:golden_score', (data) => {
   if (data.fightId !== currentFightId) return;
   document.getElementById('goldenScoreBanner').classList.add('show');
-  updateClock(data.score ? data.score.clock : null);
+  onClockUpdate(data.score ? data.score.clock : null);
   updateScore(data.score);
 });
 
 ws.on('fight:ended', (data) => {
   if (data.fightId !== currentFightId) return;
+  stopClockLoop();
   showWinner(data.winner, data.method, data.score);
   stopOsaekomiDisplay();
 });
@@ -136,7 +145,7 @@ function showFight(fight, white, blue, category) {
   // Apply current score if any
   if (fight.score) {
     updateScore(fight.score);
-    if (fight.score.clock) updateClock(fight.score.clock);
+    if (fight.score.clock) onClockUpdate(fight.score.clock);
     if (fight.score.osaekomi) updateOsaekomi(fight.score.osaekomi);
     if (fight.score.clock && fight.score.clock.goldenScore) {
       document.getElementById('goldenScoreBanner').classList.add('show');
@@ -165,6 +174,8 @@ function resetScoreDisplay() {
     document.getElementById(`blueShido${i}`).className = 'shido-dot';
   }
   // Reset clock
+  stopClockLoop();
+  stopOsaekomiDisplay();
   document.getElementById('clockDigits').textContent = '0:00';
   document.getElementById('clockDigits').className = 'clock-digits';
   // Reset golden score
@@ -199,7 +210,7 @@ function updateScore(score) {
   document.getElementById('blueYukoCount').textContent = bs.yuko || 0;
   updateShidos('blue', bs.shido || 0, !!bs.hansokuMake);
 
-  if (score.clock) updateClock(score.clock);
+  if (score.clock) onClockUpdate(score.clock);
   if (score.osaekomi) updateOsaekomi(score.osaekomi);
   if (score.clock && score.clock.goldenScore) {
     document.getElementById('goldenScoreBanner').classList.add('show');
@@ -219,8 +230,41 @@ function updateShidos(side, count, hansoku) {
   }
 }
 
-// ---- Update Clock ----
-function updateClock(clock) {
+// ---- Clock interpolation ----
+function onClockUpdate(clock) {
+  if (!clock) return;
+  clockState = clock;
+  clockReceivedAt = Date.now();
+  if (clock.running) {
+    if (!clockRafId) clockRafId = requestAnimationFrame(tickClock);
+  } else {
+    stopClockLoop();
+    renderClock(clock);
+  }
+}
+
+function tickClock() {
+  if (!clockState || !clockState.running) {
+    clockRafId = null;
+    return;
+  }
+  const elapsed = Date.now() - clockReceivedAt;
+  const interpolated = clockState.goldenScore
+    ? { ...clockState, elapsedGs: (clockState.elapsedGs || 0) + elapsed }
+    : { ...clockState, remainingMs: Math.max(0, (clockState.remainingMs || 0) - elapsed) };
+  renderClock(interpolated);
+  clockRafId = requestAnimationFrame(tickClock);
+}
+
+function stopClockLoop() {
+  if (clockRafId) {
+    cancelAnimationFrame(clockRafId);
+    clockRafId = null;
+  }
+  clockState = null;
+}
+
+function renderClock(clock) {
   if (!clock) return;
   const el = document.getElementById('clockDigits');
 
@@ -264,24 +308,27 @@ function updateOsaekomi(osaekomi) {
   }
 
   section.style.visibility = 'visible';
-
-  // Update live osaekomi display
   stopOsaekomiDisplay();
-  const startedAt = osaekomi.startedAt;
+  osaekomiStartedAt = osaekomi.startedAt;
 
-  osaekomiInterval = setInterval(() => {
-    const elapsed = Date.now() - startedAt;
+  function tickOsaekomi() {
+    const elapsed = Date.now() - osaekomiStartedAt;
     const secs = Math.min(elapsed / 1000, 20);
-    const pct = (secs / 20) * 100;
-    bar.style.width = `${pct}%`;
+    bar.style.width = `${(secs / 20) * 100}%`;
     timer.textContent = `${secs.toFixed(1)}s`;
-  }, 100);
+    if (secs < 20) {
+      osaekomiRafId = requestAnimationFrame(tickOsaekomi);
+    } else {
+      osaekomiRafId = null;
+    }
+  }
+  osaekomiRafId = requestAnimationFrame(tickOsaekomi);
 }
 
 function stopOsaekomiDisplay() {
-  if (osaekomiInterval) {
-    clearInterval(osaekomiInterval);
-    osaekomiInterval = null;
+  if (osaekomiRafId) {
+    cancelAnimationFrame(osaekomiRafId);
+    osaekomiRafId = null;
   }
 }
 

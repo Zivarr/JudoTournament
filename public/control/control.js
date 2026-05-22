@@ -13,6 +13,11 @@ let currentFightId = null;
 let clockRunning = false;
 let state = { tournament: null, competitors: [], categories: [], fights: [], activeFightByTatami: {} };
 
+// Clock interpolation
+let clockState = null;
+let clockReceivedAt = 0;
+let clockRafId = null;
+
 // ---- PIN ----
 window.submitCtrlPin = function() {
   const val = document.getElementById('ctrlPinInput').value.trim();
@@ -79,21 +84,21 @@ ws.on('fight:score', (data) => {
 
 ws.on('fight:clock', (data) => {
   if (data.fightId !== currentFightId) return;
-  updateClockDisplay(data.clock);
+  onClockUpdate(data.clock);
 });
 
 ws.on('clock:started', (data) => {
   if (data.fightId !== currentFightId) return;
   clockRunning = true;
   updateClockButton();
-  updateClockDisplay(data.clock);
+  onClockUpdate(data.clock);
 });
 
 ws.on('clock:stopped', (data) => {
   if (data.fightId !== currentFightId) return;
   clockRunning = false;
   updateClockButton();
-  updateClockDisplay(data.clock);
+  onClockUpdate(data.clock);
 });
 
 ws.on('fight:osaekomi', (data) => {
@@ -110,6 +115,7 @@ ws.on('fight:osaekomi', (data) => {
 ws.on('fight:ended', (data) => {
   if (data.fightId !== currentFightId) return;
   clockRunning = false;
+  stopClockLoop();
   updateClockButton();
   const clockEl = document.getElementById('fightClock');
   clockEl.textContent = 'EINDE';
@@ -145,7 +151,7 @@ function setCurrentFight(fight, white, blue, category) {
   document.getElementById('fightBlue').textContent = blue ? blue.name : resolveName(fight.blueId);
 
   if (fight.score && fight.score.clock) {
-    updateClockDisplay(fight.score.clock);
+    onClockUpdate(fight.score.clock);
   }
 
   updateClockButton();
@@ -155,6 +161,40 @@ function resolveName(id) {
   if (!id) return '—';
   const comp = state.competitors.find(c => c.id === id);
   return comp ? comp.name : '?';
+}
+
+// ---- Clock interpolation ----
+function onClockUpdate(clock) {
+  if (!clock) return;
+  clockState = clock;
+  clockReceivedAt = Date.now();
+  if (clock.running) {
+    if (!clockRafId) clockRafId = requestAnimationFrame(tickClock);
+  } else {
+    stopClockLoop();
+    updateClockDisplay(clock);
+  }
+}
+
+function tickClock() {
+  if (!clockState || !clockState.running) {
+    clockRafId = null;
+    return;
+  }
+  const elapsed = Date.now() - clockReceivedAt;
+  const interpolated = clockState.goldenScore
+    ? { ...clockState, elapsedGs: (clockState.elapsedGs || 0) + elapsed }
+    : { ...clockState, remainingMs: Math.max(0, (clockState.remainingMs || 0) - elapsed) };
+  updateClockDisplay(interpolated);
+  clockRafId = requestAnimationFrame(tickClock);
+}
+
+function stopClockLoop() {
+  if (clockRafId) {
+    cancelAnimationFrame(clockRafId);
+    clockRafId = null;
+  }
+  clockState = null;
 }
 
 // ---- Clock display ----
@@ -187,7 +227,7 @@ function updateClockDisplay(clock) {
 }
 
 function updateClockFromScore(score) {
-  if (score && score.clock) updateClockDisplay(score.clock);
+  if (score && score.clock) onClockUpdate(score.clock);
 }
 
 // ---- Clock button ----
