@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import { getState, setState, save, listTournaments, activateTournament } from '../state.js';
@@ -315,6 +316,21 @@ router.post('/tatami/:n/next', express.json(), (req, res) => {
   });
   save();
   res.json({ fight: nextFight, white, blue, category });
+});
+
+// GET /api/server-info  — returns network IP addresses so the setup page can build correct QR codes
+router.get('/server-info', (req, res) => {
+  const port = req.socket.localPort;
+  const nets = os.networkInterfaces();
+  const addresses = [];
+  for (const iface of Object.values(nets)) {
+    for (const net of iface) {
+      if (net.family === 'IPv4' && !net.internal) {
+        addresses.push(`http://${net.address}:${port}`);
+      }
+    }
+  }
+  res.json({ addresses });
 });
 
 // GET /api/qr?data=<url>  — returns a QR code PNG for the given URL

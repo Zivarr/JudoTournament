@@ -1,5 +1,7 @@
 import { t, setLang, getLang, applyTranslations } from '/shared/i18n.js';
 
+let networkOrigin = window.location.origin;
+
 window.switchLang = function(lang) {
   setLang(lang);
   applyTranslations();
@@ -15,8 +17,7 @@ function updateLangButtons() {
 }
 
 window.copyServerUrl = function() {
-  const url = window.location.origin;
-  navigator.clipboard.writeText(url).then(() => {
+  navigator.clipboard.writeText(networkOrigin).then(() => {
     const btn = document.getElementById('copyUrlBtn');
     const span = btn.querySelector('span');
     const original = span.textContent;
@@ -30,11 +31,11 @@ window.copyServerUrl = function() {
 };
 
 function qrUrl(path) {
-  return `/api/qr?data=${encodeURIComponent(window.location.origin + path)}`;
+  return `/api/qr?data=${encodeURIComponent(networkOrigin + path)}`;
 }
 
 function fullUrl(path) {
-  return window.location.origin + path;
+  return networkOrigin + path;
 }
 
 function renderTatamiCards(count) {
@@ -116,10 +117,28 @@ function renderChecklist() {
 async function init() {
   updateLangButtons();
   applyTranslations();
-
-  document.getElementById('serverUrlValue').textContent = window.location.origin;
-
   renderChecklist();
+
+  // Fetch the server's network IP so QR codes contain the LAN address, not localhost
+  try {
+    const infoRes = await fetch('/api/server-info');
+    const info = await infoRes.json();
+    if (info.addresses && info.addresses.length > 0) {
+      networkOrigin = info.addresses[0];
+    }
+  } catch {
+    // fallback to window.location.origin already set above
+  }
+
+  document.getElementById('serverUrlValue').textContent = networkOrigin;
+
+  // Warn if still on localhost (no network interface found)
+  if (networkOrigin.includes('localhost') || networkOrigin.includes('127.0.0.1')) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'background:var(--surface);border:1px solid var(--warning);border-radius:var(--radius);padding:0.75rem 1rem;color:var(--warning);font-size:0.85rem;margin-top:0.75rem;';
+    warn.textContent = 'Geen netwerkadres gevonden. Controleer of de server verbonden is met het WiFi-netwerk.';
+    document.getElementById('serverUrlValue').closest('.server-url-card').after(warn);
+  }
 
   try {
     const res = await fetch('/api/tournament');
