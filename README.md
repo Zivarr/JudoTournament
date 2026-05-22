@@ -47,11 +47,22 @@ http://<server-ip>:3000
 | URL | Omschrijving |
 |-----|--------------|
 | `/` | Startpagina met links naar alle modules |
+| `/setup` | **Opzethandleiding** — QR-codes en URL's per tatami, dag-checklist |
 | `/admin/` | Beheerpaneel — toernooi, deelnemers, categorieën, loting |
 | `/tatami/:id` | Scorebord voor tatami *id* (voor groot scherm) |
 | `/control/:id` | Bediening voor tatami *id* (voor tablet/telefoon) |
 | `/overview/` | Overzicht van alle tatami's |
 | `/results/` | Resultaten, poulebladen en brackets (afdrukbaar) |
+
+## Opzet op toernooidag
+
+Open `/setup` op de organisatorlaptop om de schermen in te richten:
+
+1. **Server-URL** staat bovenaan — kopieer of deel dit adres met alle apparaten op het netwerk.
+2. **Per tatami** staan twee QR-codes:
+   - **Groot scherm / TV** → scan de linker QR-code → open in browser → druk **F11** voor volledig scherm.
+   - **Bedientablet/-laptop** → scan de rechter QR-code → voer de PIN in bij eerste gebruik.
+3. **Checklist** onderaan helpt bevestigen dat alle schermen actief zijn vóór het eerste gevecht.
 
 ## CSV-importformaat
 

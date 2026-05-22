@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import QRCode from 'qrcode';
 import { getState, setState, save, listTournaments, activateTournament } from '../state.js';
 import * as engine from '../engine.js';
 import { broadcastAll } from '../ws/broadcast.js';
@@ -314,6 +315,20 @@ router.post('/tatami/:n/next', express.json(), (req, res) => {
   });
   save();
   res.json({ fight: nextFight, white, blue, category });
+});
+
+// GET /api/qr?data=<url>  — returns a QR code PNG for the given URL
+router.get('/qr', async (req, res) => {
+  const data = req.query.data;
+  if (!data) return res.status(400).json({ error: 'Missing data param' });
+  try {
+    const png = await QRCode.toBuffer(data, { width: 200, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(png);
+  } catch {
+    res.status(500).json({ error: 'QR generation failed' });
+  }
 });
 
 export default router;

@@ -35,6 +35,9 @@ app.get('/overview', (req, res) => {
 app.get('/results', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'results', 'index.html'));
 });
+app.get('/setup', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'setup', 'index.html'));
+});
 
 const server = createServer(app);
 
@@ -72,6 +75,7 @@ server.listen(PORT, () => {
     }
   }
   console.log('\nPages:');
+  console.log(`  Setup:    http://localhost:${PORT}/setup`);
   console.log(`  Admin:    http://localhost:${PORT}/admin/`);
   console.log(`  Overview: http://localhost:${PORT}/overview/`);
   console.log(`  Tatami 1: http://localhost:${PORT}/tatami/1`);
