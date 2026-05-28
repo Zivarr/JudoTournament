@@ -235,6 +235,7 @@
       <button class="tab-btn" onclick="switchTab('competitors')" data-i18n="competitors">Deelnemers</button>
       <button class="tab-btn" onclick="switchTab('categories')" data-i18n="categories">Categorieën</button>
       <button class="tab-btn" onclick="switchTab('fights')" data-i18n="fightList">Gevechtenlijst</button>
+      <button class="tab-btn" onclick="switchTab('weighin')" data-i18n="weighin">Weging</button>
     </div>
 
     <!-- Tab: Tournament -->
@@ -464,6 +465,37 @@
     <div id="tab-fights" class="tab-panel">
       <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem" data-i18n="fightList">Gevechtenlijst</h2>
       <div id="fightsByTatami"></div>
+    </div>
+
+    <!-- Tab: Weigh-in -->
+    <div id="tab-weighin" class="tab-panel">
+      <div class="flex justify-between items-center mb-2">
+        <h2 style="font-size:1.1rem;font-weight:700" data-i18n="weighin">Weging</h2>
+        <div id="weighinProgress" style="font-size:0.875rem;color:var(--muted)"></div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius);height:8px;margin-bottom:1.5rem;overflow:hidden;border:1px solid var(--border)">
+        <div id="weighinProgressBar" style="height:100%;background:var(--success);width:0%;transition:width 0.3s"></div>
+      </div>
+      <div class="card">
+        <div class="competitor-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-i18n="name">Naam</th>
+                <th data-i18n="club">Club</th>
+                <th data-i18n="registeredWeight">Opgegeven gewicht</th>
+                <th data-i18n="actualWeight">Werkelijk gewicht (kg)</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="weighinTbody">
+              <tr><td colspan="7" class="text-muted text-center">Laden...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 

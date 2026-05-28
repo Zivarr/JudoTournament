@@ -112,7 +112,8 @@ router.post('/competitors', express.json(), (req, res) => {
     club: club || '',
     gender: gender || 'M',
     weightKg: Number(weightKg) || 0,
-    birthYear: Number(birthYear) || 0
+    birthYear: Number(birthYear) || 0,
+    actualWeightKg: null
   };
   state.competitors.push(competitor);
   broadcastAll('competitor:added', { competitor });
@@ -150,7 +151,8 @@ router.post('/competitors/import', express.text({ type: '*/*', limit: '5mb' }), 
       club: club || '',
       gender: (gender || 'M').toUpperCase(),
       weightKg: Number(weightKg) || 0,
-      birthYear: Number(birthYear) || 0
+      birthYear: Number(birthYear) || 0,
+      actualWeightKg: null
     };
     state.competitors.push(competitor);
     added.push(competitor);

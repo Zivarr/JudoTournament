@@ -278,7 +278,8 @@ export function handleConnection(ws, req) {
           club: msg.club || '',
           gender: msg.gender || 'M',
           weightKg: Number(msg.weightKg) || 0,
-          birthYear: Number(msg.birthYear) || 0
+          birthYear: Number(msg.birthYear) || 0,
+          actualWeightKg: null
         };
         state.competitors.push(competitor);
         broadcastAll('competitor:added', { competitor });
@@ -291,6 +292,17 @@ export function handleConnection(ws, req) {
         const idx = state.competitors.findIndex(c => c.id === msg.id);
         if (idx === -1) return;
         state.competitors[idx] = { ...state.competitors[idx], ...msg };
+        broadcastAll('competitor:updated', { competitor: state.competitors[idx] });
+        save();
+        break;
+      }
+
+      case 'admin:weigh_competitor': {
+        if (!validatePin(pin)) { safeSend(ws, { type: 'error', message: 'wrongPin' }); return; }
+        const idx = state.competitors.findIndex(c => c.id === msg.id);
+        if (idx === -1) return;
+        const actualKg = msg.actualWeightKg != null ? Number(msg.actualWeightKg) : null;
+        state.competitors[idx] = { ...state.competitors[idx], actualWeightKg: actualKg };
         broadcastAll('competitor:updated', { competitor: state.competitors[idx] });
         save();
         break;

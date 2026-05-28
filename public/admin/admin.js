@@ -33,6 +33,24 @@ function getAgeCategory(birthYear) {
   return 'Senior';
 }
 
+function findTargetCategory(competitor, actualWeightKg) {
+  const sourceCategory = (state.categories || []).find(c =>
+    c.status !== 'deleted' && (c.competitorIds || []).includes(competitor.id)
+  );
+  const ageCategory = sourceCategory
+    ? sourceCategory.ageCategory
+    : (competitor.birthYear ? getAgeCategory(competitor.birthYear) : null);
+
+  const candidates = (state.categories || []).filter(c => {
+    if (c.status === 'deleted') return false;
+    if (c.gender !== competitor.gender) return false;
+    if (ageCategory && c.ageCategory && c.ageCategory !== ageCategory) return false;
+    return actualWeightKg <= c.maxWeight;
+  });
+  candidates.sort((a, b) => a.maxWeight - b.maxWeight);
+  return { sourceCategory: sourceCategory || null, targetCategory: candidates[0] || null };
+}
+
 let ws;
 let pin = sessionStorage.getItem('adminPin') || '';
 let state = { tournament: null, competitors: [], categories: [], pools: [], fights: [], activeFightByTatami: {} };
@@ -203,6 +221,7 @@ window.switchTab = function(tab) {
   if (tab === 'fights') renderFightsTab();
   if (tab === 'categories') renderCategoriesTab();
   if (tab === 'competitors') renderCompetitorsTab();
+  if (tab === 'weighin') renderWeighinTab();
 };
 
 // ---- WS Setup ----
@@ -250,6 +269,7 @@ function initWs() {
     const idx = state.competitors.findIndex(c => c.id === data.competitor.id);
     if (idx !== -1) state.competitors[idx] = data.competitor;
     renderCompetitorsTab();
+    if (document.getElementById('tab-weighin').classList.contains('active')) renderWeighinTab();
   });
 
   ws.on('category:added', (data) => {
@@ -261,6 +281,7 @@ function initWs() {
     const idx = state.categories.findIndex(c => c.id === data.category.id);
     if (idx !== -1) state.categories[idx] = data.category;
     renderCategoriesTab();
+    if (document.getElementById('tab-weighin').classList.contains('active')) renderWeighinTab();
   });
 
   ws.on('bracket:updated', (data) => {
@@ -290,6 +311,7 @@ function renderAll() {
   renderCompetitorsTab();
   renderCategoriesTab();
   renderFightsTab();
+  renderWeighinTab();
   updateTatamiSelects();
 }
 
@@ -754,6 +776,104 @@ window.autoGenerateCategories = function() {
       tatami: 1,
       competitorIds: g.competitors.map(c => c.id)
     });
+  }
+};
+
+// ---- Weigh-in Tab ----
+function renderWeighinTab() {
+  const competitors = state.competitors || [];
+  const total = competitors.length;
+  const weighed = competitors.filter(c => c.actualWeightKg != null).length;
+
+  document.getElementById('weighinProgress').textContent =
+    `${weighed} ${t('of')} ${total} ${t('weighed')}`;
+  document.getElementById('weighinProgressBar').style.width =
+    total > 0 ? Math.round((weighed / total) * 100) + '%' : '0%';
+
+  const tbody = document.getElementById('weighinTbody');
+  if (total === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center">Geen deelnemers</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = competitors.map((c, i) => {
+    const actual = c.actualWeightKg;
+    const hasActual = actual != null;
+
+    let statusBadge = `<span class="badge">${t('notWeighed')}</span>`;
+    let moveBtn = '';
+
+    if (hasActual) {
+      const { sourceCategory, targetCategory } = findTargetCategory(c, actual);
+      const inCorrectCategory = sourceCategory && targetCategory && sourceCategory.id === targetCategory.id;
+
+      if (!sourceCategory && !targetCategory) {
+        statusBadge = `<span class="badge badge-danger">${t('noCategory')}</span>`;
+      } else if (!sourceCategory) {
+        statusBadge = `<span class="badge badge-warning">${t('noCategory')}</span>`;
+        const locked = targetCategory.status === 'drawn';
+        moveBtn = locked
+          ? `<button class="btn btn-sm" disabled title="${t('categoryDrawnWarning')}">${t('moveTo')} ${esc(targetCategory.name)} 🔒</button>`
+          : `<button class="btn btn-warning btn-sm" onclick="moveToCategory('${c.id}', null, '${targetCategory.id}')">${t('moveTo')} ${esc(targetCategory.name)}</button>`;
+      } else if (inCorrectCategory) {
+        statusBadge = `<span class="badge badge-success">✓ ${esc(sourceCategory.name)}</span>`;
+      } else {
+        statusBadge = `<span class="badge badge-danger">${t('mismatch')}: ${esc(sourceCategory.name)}</span>`;
+        if (targetCategory) {
+          const locked = sourceCategory.status === 'drawn' || targetCategory.status === 'drawn';
+          moveBtn = locked
+            ? `<button class="btn btn-sm" disabled title="${t('categoryDrawnWarning')}">${t('moveTo')} ${esc(targetCategory.name)} 🔒</button>`
+            : `<button class="btn btn-warning btn-sm" onclick="moveToCategory('${c.id}', '${sourceCategory.id}', '${targetCategory.id}')">${t('moveTo')} ${esc(targetCategory.name)}</button>`;
+        }
+      }
+    }
+
+    return `
+      <tr>
+        <td class="text-muted">${i + 1}</td>
+        <td><strong>${esc(c.name)}</strong></td>
+        <td>${esc(c.club)}</td>
+        <td>${c.weightKg} kg</td>
+        <td>
+          <input type="number" step="0.1" min="1" max="300"
+            style="width:90px;padding:0.3rem 0.5rem;font-size:0.875rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)"
+            value="${hasActual ? actual : ''}"
+            placeholder="—"
+            onchange="weighCompetitor('${c.id}', this.value)">
+        </td>
+        <td>${statusBadge}</td>
+        <td>${moveBtn}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.weighCompetitor = function(id, value) {
+  const kg = value === '' ? null : Number(value);
+  if (kg !== null && (isNaN(kg) || kg <= 0)) return;
+  ws.send('admin:weigh_competitor', { pin, id, actualWeightKg: kg });
+};
+
+window.moveToCategory = function(competitorId, sourceCategoryId, targetCategoryId) {
+  const sourceCat = sourceCategoryId
+    ? state.categories.find(c => c.id === sourceCategoryId)
+    : null;
+  const targetCat = state.categories.find(c => c.id === targetCategoryId);
+
+  if ((sourceCat && sourceCat.status === 'drawn') || (targetCat && targetCat.status === 'drawn')) {
+    alert(t('categoryDrawnWarning'));
+    return;
+  }
+
+  if (sourceCat) {
+    const newSourceIds = (sourceCat.competitorIds || []).filter(id => id !== competitorId);
+    ws.send('admin:update_category', { pin, id: sourceCategoryId, competitorIds: newSourceIds });
+  }
+
+  if (targetCat) {
+    const newTargetIds = [...(targetCat.competitorIds || [])];
+    if (!newTargetIds.includes(competitorId)) newTargetIds.push(competitorId);
+    ws.send('admin:update_category', { pin, id: targetCategoryId, competitorIds: newTargetIds });
   }
 };
 
