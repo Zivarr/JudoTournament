@@ -121,6 +121,8 @@
     .link-card.tatami-card-link:hover { border-color: var(--info); }
     .link-card.control-card { border-color: var(--warning); }
     .link-card.control-card:hover { border-color: var(--warning); }
+    .link-card.matcontrol-card { border-color: var(--info); }
+    .link-card.matcontrol-card:hover { border-color: var(--info); }
 
     .section-title {
       width: 100%;
@@ -196,6 +198,9 @@
 
     <div class="section-title" id="controlSection" style="display:none">Tatami Control</div>
     <div class="links-grid" id="controlLinks"></div>
+
+    <div class="section-title" id="matcontrolSection" style="display:none">Mat + Bediening (Gecombineerd)</div>
+    <div class="links-grid" id="matcontrolLinks"></div>
   </div>
 
   <script type="module">
@@ -245,14 +250,18 @@
     function renderTatamiLinks(count) {
       const tatamiSection = document.getElementById('tatamiSection');
       const controlSection = document.getElementById('controlSection');
+      const matcontrolSection = document.getElementById('matcontrolSection');
       const tatamiLinks = document.getElementById('tatamiLinks');
       const controlLinks = document.getElementById('controlLinks');
+      const matcontrolLinks = document.getElementById('matcontrolLinks');
 
       tatamiSection.style.display = 'block';
       controlSection.style.display = 'block';
+      matcontrolSection.style.display = 'block';
 
       tatamiLinks.innerHTML = '';
       controlLinks.innerHTML = '';
+      matcontrolLinks.innerHTML = '';
 
       for (let i = 1; i <= count; i++) {
         const card = document.createElement('a');
@@ -274,6 +283,16 @@
           <div class="card-desc">Tatami ${i} bediening</div>
         `;
         controlLinks.appendChild(cCard);
+
+        const mcCard = document.createElement('a');
+        mcCard.href = `/matcontrol/${i}`;
+        mcCard.className = 'link-card matcontrol-card';
+        mcCard.innerHTML = `
+          <div class="card-icon">📱</div>
+          <div class="card-label">Mat + Bediening ${i}</div>
+          <div class="card-desc">Scorebord + bediening op één scherm</div>
+        `;
+        matcontrolLinks.appendChild(mcCard);
       }
     }
 

@@ -26,6 +26,9 @@ app.get('/tatami/:n', (req, res) => {
 app.get('/control/:n', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'control', 'index.html'));
 });
+app.get('/matcontrol/:n', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'matcontrol', 'index.html'));
+});
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
 });
@@ -80,5 +83,6 @@ server.listen(PORT, () => {
   console.log(`  Overview: http://localhost:${PORT}/overview/`);
   console.log(`  Tatami 1: http://localhost:${PORT}/tatami/1`);
   console.log(`  Control 1:http://localhost:${PORT}/control/1`);
+  console.log(`  MatCtrl 1:http://localhost:${PORT}/matcontrol/1`);
   console.log('');
 });

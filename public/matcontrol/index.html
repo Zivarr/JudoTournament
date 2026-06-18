@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mat Bediening - Judo Tournament</title>
+  <link rel="stylesheet" href="/shared/styles/base.css">
+  <link rel="stylesheet" href="/shared/styles/scoreboard.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--bg);
+      height: 100vh;
+    }
+
+    /* ---- Header ---- */
+    .mc-header {
+      width: 100%;
+      max-width: 700px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .mc-header-title { font-size: 0.9rem; font-weight: 700; }
+    .mc-header-right { display: flex; align-items: center; gap: 0.75rem; }
+
+    /* ---- Top section: scoreboard area ---- */
+    .top-section {
+      width: 100%;
+      max-width: 700px;
+      height: 38vh;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #noFightDisplay {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: 0.5rem;
+    }
+
+    #noFightDisplay .tatami-num {
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 900;
+      color: var(--accent-hover);
+      opacity: 0.4;
+    }
+
+    #noFightDisplay .idle-text { font-size: 1rem; font-weight: 600; }
+
+    #scoreboardSection {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ---- Compact overrides for the embedded scoreboard ---- */
+    #scoreboardSection .category-label {
+      padding: 0.2rem 0.75rem;
+      min-height: 28px;
+    }
+    #scoreboardSection .cat-name    { font-size: clamp(0.75rem, 2vw, 1rem); }
+    #scoreboardSection .fight-round { font-size: clamp(0.6rem, 1.2vw, 0.8rem); }
+    #scoreboardSection .side        { padding: clamp(0.3rem, 1.5vw, 0.75rem); }
+    #scoreboardSection .fighter-color-bar { height: 4px; margin-bottom: 0.35rem; }
+    #scoreboardSection .fighter-name  { font-size: clamp(1rem, 3.5vw, 2.2rem); margin-bottom: 0.1rem; }
+    #scoreboardSection .fighter-club  { font-size: clamp(0.6rem, 1.2vw, 0.8rem); margin-bottom: 0.35rem; }
+    #scoreboardSection .score-row  { margin-top: 0.15rem; }
+    #scoreboardSection .shido-row  { margin-top: 0.15rem; }
+    #scoreboardSection .score-ippon { font-size: clamp(0.75rem, 2vw, 1.3rem); }
+    #scoreboardSection .score-wazaari {
+      width: clamp(1rem, 2.5vw, 1.8rem);
+      height: clamp(1rem, 2.5vw, 1.8rem);
+    }
+    #scoreboardSection .clock-panel {
+      min-width: clamp(90px, 14vw, 190px);
+      padding: 0.4rem 0.5rem;
+      gap: 0.3rem;
+    }
+    #scoreboardSection .clock-digits       { font-size: clamp(1.8rem, 6vw, 5rem); }
+    #scoreboardSection .golden-score-banner { font-size: clamp(0.55rem, 1.2vw, 0.8rem); padding: 0.15rem 0.45rem; }
+    #scoreboardSection .osaekomi-timer     { font-size: clamp(0.7rem, 1.5vw, 1.1rem); }
+    #scoreboardSection .winner-banner      { font-size: clamp(0.9rem, 2.5vw, 1.8rem); }
+
+    /* ---- Control panel: proportional flex — no fixed button padding ---- */
+    #ctrlPanel {
+      width: 100%;
+      max-width: 700px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding: 0.3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      border-top: 2px solid var(--border);
+    }
+
+    /*
+     * Flex weights match button-row counts so each row gets equal height:
+     *  Score:  5 rows  → flex 5
+     *  Osa:    3 rows  → flex 3
+     *  Clock:  1 row   → flex 1
+     *  Undo:   1 row   → flex 1
+     *  Ref:    2 rows  → flex 2
+     *  Next:   1 row   → flex 1
+     */
+    .ctrl-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .ctrl-section.section-score { flex: 5; }
+    .ctrl-section.section-osa   { flex: 3; }
+    .ctrl-section.section-ref   { flex: 2; }
+
+    /* Score grid: fills section height, rows auto-sized to 1fr */
+    .score-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: 1fr;
+      gap: 0.25rem;
+    }
+
+    /* Score buttons: fill their grid cell, no fixed padding */
+    .score-btn {
+      font-size: 0.82rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.08rem;
+      min-height: 0;
+      transition: opacity 0.1s, transform 0.1s;
+    }
+
+    .score-btn:active  { transform: scale(0.95); opacity: 0.8; }
+    .score-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .score-btn .btn-sub {
+      font-size: 0.58rem;
+      font-weight: 600;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Full-width buttons: fill their flex row, no fixed padding */
+    .btn-full {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      transition: opacity 0.1s, transform 0.1s;
+    }
+
+    .btn-full:active  { transform: scale(0.97); opacity: 0.9; }
+    .btn-full:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Button colours */
+    .btn-white-score { background: linear-gradient(135deg, #d0d0d0, #b8b8b8); color: #1a1a2e; border: 2px solid #e0e0e0; }
+    .btn-blue-score  { background: linear-gradient(135deg, #1a6fc4, #155a9e); color: #fff;    border: 2px solid #2080d8; }
+    .btn-clock-start { background: var(--success); color: #fff; }
+    .btn-clock-stop  { background: var(--danger);  color: #fff; }
+    .btn-osa-white   { background: linear-gradient(135deg, #c8c8c8, #a8a8a8); color: #1a1a2e; }
+    .btn-osa-blue    { background: linear-gradient(135deg, #1660a8, #0d4a80); color: #fff; }
+    .btn-osa-break   { background: var(--warning); color: #1a1a2e; }
+    .btn-undo        { background: var(--accent);  color: var(--text); border: 1px solid var(--border); }
+    .btn-next        { background: var(--info);    color: #fff; }
+    .btn-ref-white   { background: linear-gradient(135deg, #d0d0d0, #a8a8a8); color: #1a1a2e; }
+    .btn-ref-blue    { background: linear-gradient(135deg, #1a6fc4, #0d4a80); color: #fff; }
+    .btn-confirm     { background: #7c3aed; color: #fff; animation: confirmPulse 1s ease-in-out infinite; }
+
+    @keyframes confirmPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.5); }
+      50%       { box-shadow: 0 0 0 6px rgba(124,58,237,0); }
+    }
+
+    /* ---- PIN Modal ---- */
+    #pinModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #pinModal .modal { text-align: center; }
+    #pinModal h2    { margin-bottom: 1rem; }
+
+    #ctrlPinInput {
+      font-size: 2rem;
+      text-align: center;
+      letter-spacing: 0.3em;
+      width: 180px;
+      margin: 0 auto 1rem;
+      display: block;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.5rem;
+    }
+
+    #ctrlPinError { color: var(--danger); margin-bottom: 0.75rem; display: none; }
+  </style>
+</head>
+<body>
+  <!-- PIN Modal -->
+  <div id="pinModal">
+    <div class="modal">
+      <h2 data-i18n="enterPin">Voer PIN in</h2>
+      <input type="password" id="ctrlPinInput" maxlength="8" placeholder="••••" autocomplete="off">
+      <div id="ctrlPinError" data-i18n="wrongPin">Onjuiste PIN</div>
+      <button class="btn btn-primary btn-block" onclick="submitCtrlPin()">OK</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="mc-header">
+    <div class="mc-header-title" id="mcTitle">Mat Bediening ?</div>
+    <div class="mc-header-right">
+      <a href="/" style="font-size:0.8rem;color:var(--muted)">Home</a>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="langNl" onclick="switchLang('nl')">NL</button>
+        <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+      </div>
+      <div class="conn-indicator" id="connIndicator"></div>
+    </div>
+  </div>
+
+  <!-- Top section: no-fight placeholder or live scoreboard -->
+  <div class="top-section">
+    <div id="noFightDisplay">
+      <div class="tatami-num" id="tatamiNumDisplay">?</div>
+      <div class="idle-text" data-i18n="noFight">Geen actief gevecht</div>
+    </div>
+
+    <div id="scoreboardSection">
+      <div class="scoreboard-wrapper">
+        <div class="category-label">
+          <span class="cat-name" id="catName">—</span>
+          <span class="fight-round" id="fightRound">—</span>
+        </div>
+        <div class="scoreboard">
+          <!-- White side -->
+          <div class="side white" id="whiteSide">
+            <div class="fighter-color-bar"></div>
+            <div class="fighter-name" id="whiteName">—</div>
+            <div class="fighter-club" id="whiteClub"></div>
+            <div class="score-row">
+              <div class="score-ippon" id="whiteIppon">I</div>
+              <div class="score-wazaari-container">
+                <div class="score-wazaari" id="whiteWa1">W</div>
+                <div class="score-wazaari" id="whiteWa2">W</div>
+              </div>
+              <div class="score-yuko" id="whiteYuko">
+                <span class="yuko-label">Y</span>
+                <span class="yuko-count" id="whiteYukoCount">0</span>
+              </div>
+            </div>
+            <div class="shido-row">
+              <span class="shido-label">Shido</span>
+              <div class="shido-dots">
+                <div class="shido-dot" id="whiteShido1"></div>
+                <div class="shido-dot" id="whiteShido2"></div>
+                <div class="shido-dot" id="whiteShido3"></div>
+              </div>
+            </div>
+            <div class="winner-banner" id="whiteWinnerBanner" data-i18n="winner">Winnaar</div>
+          </div>
+
+          <!-- Center clock -->
+          <div class="clock-panel">
+            <div class="golden-score-banner" id="goldenScoreBanner" data-i18n="goldenScore">Gouden Score</div>
+            <div class="clock-digits" id="clockDigits">0:00</div>
+            <div class="osaekomi-section" id="osaekomiSection" style="visibility:hidden">
+              <div class="osaekomi-label" data-i18n="osaekomi">Osaekomi</div>
+              <div class="osaekomi-bar-wrap">
+                <div class="osaekomi-bar" id="osaekomiBar"></div>
+              </div>
+              <div class="osaekomi-timer" id="osaekomiTimer">0.0s</div>
+            </div>
+          </div>
+
+          <!-- Blue side -->
+          <div class="side blue" id="blueSide">
+            <div class="fighter-color-bar"></div>
+            <div class="fighter-name" id="blueName">—</div>
+            <div class="fighter-club" id="blueClub"></div>
+            <div class="score-row">
+              <div class="score-ippon" id="blueIppon">I</div>
+              <div class="score-wazaari-container">
+                <div class="score-wazaari" id="blueWa1">W</div>
+                <div class="score-wazaari" id="blueWa2">W</div>
+              </div>
+              <div class="score-yuko" id="blueYuko">
+                <span class="yuko-label">Y</span>
+                <span class="yuko-count" id="blueYukoCount">0</span>
+              </div>
+            </div>
+            <div class="shido-row">
+              <span class="shido-label">Shido</span>
+              <div class="shido-dots">
+                <div class="shido-dot" id="blueShido1"></div>
+                <div class="shido-dot" id="blueShido2"></div>
+                <div class="shido-dot" id="blueShido3"></div>
+              </div>
+            </div>
+            <div class="winner-banner" id="blueWinnerBanner" data-i18n="winner">Winnaar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Control panel: proportional flex, no scroll -->
+  <div id="ctrlPanel">
+
+    <!-- Score (5 rows) -->
+    <div class="ctrl-section section-score">
+      <div class="score-grid">
+        <button class="score-btn btn-white-score" onclick="score('ippon','white')">
+          <span data-i18n="ippon">Ippon</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('ippon','blue')">
+          <span data-i18n="ippon">Ippon</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('wazaari','white')">
+          <span data-i18n="wazaAri">Waza-ari</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('wazaari','blue')">
+          <span data-i18n="wazaAri">Waza-ari</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('yuko','white')">
+          <span data-i18n="yuko">Yuko</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('yuko','blue')">
+          <span data-i18n="yuko">Yuko</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('shido','white')">
+          <span data-i18n="shido">Shido</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('shido','blue')">
+          <span data-i18n="shido">Shido</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+        <button class="score-btn btn-white-score" onclick="score('hansoku','white')">
+          <span data-i18n="hansokuMake">Hansoku-make</span>
+          <span class="btn-sub" data-i18n="white">Wit</span>
+        </button>
+        <button class="score-btn btn-blue-score" onclick="score('hansoku','blue')">
+          <span data-i18n="hansokuMake">Hansoku-make</span>
+          <span class="btn-sub" data-i18n="blue">Blauw</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Osaekomi (3 rows) -->
+    <div class="ctrl-section section-osa">
+      <div class="score-grid" style="grid-auto-rows: 1fr; flex: 1;">
+        <button class="score-btn btn-osa-white" onclick="osaekomi('white')">
+          <span data-i18n="osaekomiWhite">Osaekomi Wit</span>
+        </button>
+        <button class="score-btn btn-osa-blue" onclick="osaekomi('blue')">
+          <span data-i18n="osaekomiBlue">Osaekomi Blauw</span>
+        </button>
+      </div>
+      <button class="btn-full btn-osa-break" onclick="osaekomiBreak()">
+        <span data-i18n="breakHold">Houdgreep verbroken</span>
+      </button>
+      <button class="btn-full btn-confirm" id="btnConfirmScore" onclick="confirmOsaekomi()" style="display:none">
+        ✔ Bevestig score
+      </button>
+    </div>
+
+    <!-- Clock (1 row) -->
+    <div class="ctrl-section">
+      <button class="btn-full btn-clock-start" id="btnClockStart" onclick="clockAction()">
+        ▶ <span data-i18n="startClock">Klok starten</span>
+      </button>
+    </div>
+
+    <!-- Undo (1 row) -->
+    <div class="ctrl-section">
+      <button class="btn-full btn-undo" onclick="undo()">
+        ↩ <span data-i18n="undo">Ongedaan maken</span>
+      </button>
+    </div>
+
+    <!-- Referee decision (2 rows) -->
+    <div class="ctrl-section section-ref">
+      <button class="btn-full btn-ref-white" onclick="refereeDecision('white')">
+        <span data-i18n="refereeDecisionWhite">Scheidsrechterbeslissing (Wit)</span>
+      </button>
+      <button class="btn-full btn-ref-blue" onclick="refereeDecision('blue')">
+        <span data-i18n="refereeDecisionBlue">Scheidsrechterbeslissing (Blauw)</span>
+      </button>
+    </div>
+
+    <!-- Next fight (1 row) -->
+    <div class="ctrl-section">
+      <button class="btn-full btn-next" onclick="nextFight()">
+        ⏭ <span data-i18n="nextFight">Volgende gevecht</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script type="module" src="/matcontrol/matcontrol.js"></script>
+</body>
+</html>

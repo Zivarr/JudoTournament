@@ -155,6 +155,63 @@ export function handleConnection(ws, req) {
         break;
       }
 
+      case 'osaekomi:confirm': {
+        if (!validatePin(pin)) { safeSend(ws, { type: 'error', message: 'wrongPin' }); return; }
+        const { fightId } = msg;
+        const fightIdx = state.fights.findIndex(f => f.id === fightId);
+        if (fightIdx === -1) return;
+        const fight = state.fights[fightIdx];
+        if (!fight || fight.status === 'ended') return;
+        const osa = fight.score.osaekomi;
+        if (!osa || !osa.pendingScore) return;
+
+        const { side } = osa;
+
+        if (osa.pendingScore === 'yuko') {
+          fight.score[side].yuko = (fight.score[side].yuko || 0) + 1;
+          osa.yukoAwarded = true;
+          osa.pendingScore = null;
+          broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
+          broadcastToTatami(fight.tatami, 'fight:osaekomi', { fightId, osaekomi: osa });
+
+        } else if (osa.pendingScore === 'wazaAri') {
+          if (osa.yukoAwarded) {
+            fight.score[side].yuko = Math.max(0, (fight.score[side].yuko || 0) - 1);
+            osa.yukoAwarded = false;
+          }
+          fight.score[side].wazaAri = (fight.score[side].wazaAri || 0) + 1;
+          osa.wazaAriAwarded = true;
+          osa.pendingScore = null;
+          if (fight.score[side].wazaAri >= 2) {
+            fight.score[side].ippon = true;
+            fight.score.winner = side;
+            fight.score.method = 'waza-ari-awasete-ippon';
+            fight.status = 'ended';
+            stopClock(fightId);
+            stopOsaekomi(fightId);
+            broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
+            broadcastToTatami(fight.tatami, 'fight:ended', { fightId, winner: fight.score.winner, method: fight.score.method, score: fight.score });
+          } else {
+            broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
+            broadcastToTatami(fight.tatami, 'fight:osaekomi', { fightId, osaekomi: osa });
+          }
+
+        } else if (osa.pendingScore === 'ippon') {
+          fight.score[side].ippon = true;
+          fight.score.winner = side;
+          fight.score.method = 'ippon';
+          fight.status = 'ended';
+          osa.ipponAwarded = true;
+          osa.pendingScore = null;
+          stopClock(fightId);
+          stopOsaekomi(fightId);
+          broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
+          broadcastToTatami(fight.tatami, 'fight:ended', { fightId, winner: fight.score.winner, method: fight.score.method, score: fight.score });
+        }
+        save();
+        break;
+      }
+
       case 'fight:next': {
         if (!validatePin(pin)) { safeSend(ws, { type: 'error', message: 'wrongPin' }); return; }
         const { tatami } = msg;

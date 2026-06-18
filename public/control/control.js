@@ -85,6 +85,7 @@ ws.on('fight:score', (data) => {
 ws.on('fight:clock', (data) => {
   if (data.fightId !== currentFightId) return;
   onClockUpdate(data.clock);
+  if (data.osaekomi !== undefined) updateConfirmButton(data.osaekomi);
 });
 
 ws.on('clock:started', (data) => {
@@ -110,6 +111,7 @@ ws.on('fight:osaekomi', (data) => {
   } else {
     badge.classList.remove('show');
   }
+  updateConfirmButton(data.osaekomi);
 });
 
 ws.on('fight:ended', (data) => {
@@ -121,6 +123,7 @@ ws.on('fight:ended', (data) => {
   clockEl.textContent = 'EINDE';
   clockEl.className = 'fi-clock';
   document.getElementById('osaActiveBadge').classList.remove('show');
+  updateConfirmButton(null);
 });
 
 ws.on('fight:golden_score', (data) => {
@@ -242,6 +245,20 @@ function updateClockButton() {
   }
 }
 
+// ---- Confirm button ----
+function updateConfirmButton(osaekomi) {
+  const btn = document.getElementById('btnConfirmScore');
+  if (!btn) return;
+  if (osaekomi && osaekomi.active && osaekomi.pendingScore) {
+    const labels = { yuko: t('yuko'), wazaAri: t('wazaAri'), ippon: t('ippon') };
+    const sideLabel = osaekomi.side === 'white' ? t('white') : t('blue');
+    btn.textContent = `✔ ${labels[osaekomi.pendingScore] || osaekomi.pendingScore} (${sideLabel})`;
+    btn.style.display = 'flex';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
 // ---- Actions ----
 window.score = function(type, side) {
   if (!currentFightId) return;
@@ -267,6 +284,11 @@ window.osaekomi = function(side) {
 window.osaekomiBreak = function() {
   if (!currentFightId) return;
   ws.send('osaekomi:break', { pin, fightId: currentFightId });
+};
+
+window.confirmOsaekomi = function() {
+  if (!currentFightId) return;
+  ws.send('osaekomi:confirm', { pin, fightId: currentFightId });
 };
 
 window.undo = function() {

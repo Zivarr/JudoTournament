@@ -32,7 +32,7 @@ const translations = {
     hansokuMake: "Hansoku-make",
     goldenScore: "Gouden Score",
     osaekomi: "Osaekomi",
-    breakHold: "Houdgreep breken",
+    breakHold: "Houdgreep verbroken",
     startHold: "Houdgreep starten",
     start: "Start",
     stop: "Stop",
@@ -115,6 +115,7 @@ const translations = {
     noCategory: "Geen categorie",
     categoryDrawnWarning: "Loting al gegenereerd — verplaatsen geblokkeerd",
     categoryLocked: "Categorie vergrendeld (loting gegenereerd)",
+    confirmScore: "Bevestig score",
   },
   en: {
     admin: "Admin",
@@ -232,6 +233,7 @@ const translations = {
     noCategory: "No category",
     categoryDrawnWarning: "Draw already generated — moving blocked",
     categoryLocked: "Category locked (draw generated)",
+    confirmScore: "Confirm score",
   }
 };
 

@@ -210,6 +210,18 @@
       color: #fff;
     }
 
+    .btn-confirm {
+      background: #7c3aed;
+      color: #fff;
+      font-size: 1.05rem;
+      animation: confirmPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes confirmPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.5); }
+      50%       { box-shadow: 0 0 0 8px rgba(124,58,237,0); }
+    }
+
     .divider {
       border: none;
       border-top: 1px solid var(--border);
@@ -361,7 +373,10 @@
         </button>
       </div>
       <button class="btn-full btn-osa-break" onclick="osaekomiBreak()">
-        <span data-i18n="breakHold">Houdgreep breken</span>
+        <span data-i18n="breakHold">Houdgreep verbroken</span>
+      </button>
+      <button class="btn-full btn-confirm" id="btnConfirmScore" onclick="confirmOsaekomi()" style="display:none">
+        ✔ Bevestig score
       </button>
     </div>
 

@@ -186,47 +186,17 @@ export function startClock(fightId, broadcastFn) {
       f.score.clock.remainingMs = Math.max(0, f.score.clock.storedRemainingMs - elapsed);
     }
 
-    // Check osaekomi
+    // Check osaekomi — set pending score for referee to confirm
     if (f.score.osaekomi && f.score.osaekomi.active && f.score.osaekomi.startedAt) {
       const osaElapsed = now - f.score.osaekomi.startedAt;
+      const osa = f.score.osaekomi;
 
-      if (osaElapsed >= 20000 && !f.score.osaekomi.ipponAwarded) {
-        f.score.osaekomi.ipponAwarded = true;
-        const holdSide = f.score.osaekomi.side;
-        if (holdSide === 'white') { f.score.white.ippon = true; } else { f.score.blue.ippon = true; }
-        f.score.winner = holdSide;
-        f.score.method = 'ippon';
-        f.status = 'ended';
-        f.score.clock.running = false;
-        f.score.osaekomi.active = false;
-        clearInterval(intervalId);
-        activeClockIntervals.delete(fightId);
-        broadcastFn('fight:score', { fightId, score: f.score });
-        broadcastFn('fight:ended', { fightId, winner: f.score.winner, method: f.score.method, score: f.score });
-        return;
-      } else if (osaElapsed >= 10000 && !f.score.osaekomi.wazaAriAwarded) {
-        f.score.osaekomi.wazaAriAwarded = true;
-        const holdSide = f.score.osaekomi.side;
-        if (holdSide === 'white') {
-          f.score.white.wazaAri = (f.score.white.wazaAri || 0) + 1;
-        } else {
-          f.score.blue.wazaAri = (f.score.blue.wazaAri || 0) + 1;
-        }
-        const sideScore = holdSide === 'white' ? f.score.white : f.score.blue;
-        if (sideScore.wazaAri >= 2) {
-          sideScore.ippon = true;
-          f.score.winner = holdSide;
-          f.score.method = 'waza-ari-awasete-ippon';
-          f.status = 'ended';
-          f.score.clock.running = false;
-          f.score.osaekomi.active = false;
-          clearInterval(intervalId);
-          activeClockIntervals.delete(fightId);
-          broadcastFn('fight:score', { fightId, score: f.score });
-          broadcastFn('fight:ended', { fightId, winner: f.score.winner, method: f.score.method, score: f.score });
-          return;
-        }
-        broadcastFn('fight:score', { fightId, score: f.score });
+      if (osaElapsed >= 20000 && !osa.ipponAwarded && osa.pendingScore !== 'ippon') {
+        osa.pendingScore = 'ippon';
+      } else if (osaElapsed >= 10000 && !osa.wazaAriAwarded && osa.pendingScore !== 'wazaAri' && osa.pendingScore !== 'ippon') {
+        osa.pendingScore = 'wazaAri';
+      } else if (osaElapsed >= 5000 && !osa.yukoAwarded && !osa.pendingScore) {
+        osa.pendingScore = 'yuko';
       }
     }
 
@@ -278,6 +248,8 @@ export function startOsaekomi(fightId, side) {
     active: true,
     side,
     startedAt: Date.now(),
+    pendingScore: null,
+    yukoAwarded: false,
     wazaAriAwarded: false,
     ipponAwarded: false
   };
@@ -289,5 +261,6 @@ export function stopOsaekomi(fightId) {
   if (fight.score.osaekomi) {
     fight.score.osaekomi.active = false;
     fight.score.osaekomi.startedAt = null;
+    fight.score.osaekomi.pendingScore = null;
   }
 }

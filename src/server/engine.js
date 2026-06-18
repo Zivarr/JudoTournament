@@ -104,6 +104,10 @@ export function applyOsaekomiTick(fight, elapsedMs) {
     f.score.osaekomi.active = false;
   } else if (elapsedMs >= 10000 && !f.score.osaekomi.wazaAriAwarded) {
     f.score.osaekomi.wazaAriAwarded = true;
+    // Yuko at 5s upgrades to waza-ari — remove it
+    if (f.score.osaekomi.yukoAwarded) {
+      f.score[side].yuko = Math.max(0, (f.score[side].yuko || 0) - 1);
+    }
     f.score[side].wazaAri = (f.score[side].wazaAri || 0) + 1;
     if (f.score[side].wazaAri >= 2) {
       f.score[side].ippon = true;
@@ -113,6 +117,9 @@ export function applyOsaekomiTick(fight, elapsedMs) {
       f.score.clock.running = false;
       f.score.osaekomi.active = false;
     }
+  } else if (elapsedMs >= 5000 && !f.score.osaekomi.yukoAwarded) {
+    f.score.osaekomi.yukoAwarded = true;
+    f.score[side].yuko = (f.score[side].yuko || 0) + 1;
   }
   return f;
 }
@@ -161,7 +168,7 @@ function createEmptyFight(categoryId, tatami, round, roundName, matchIndex, figh
         goldenScore: false,
         elapsedGs: 0
       },
-      osaekomi: { active: false, side: null, startedAt: null, wazaAriAwarded: false, ipponAwarded: false }
+      osaekomi: { active: false, side: null, startedAt: null, yukoAwarded: false, wazaAriAwarded: false, ipponAwarded: false }
     }
   };
 }

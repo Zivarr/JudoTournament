@@ -383,6 +383,32 @@
 
 .osaekomi-timer.hidden { display: none; }
 
+/* Pending score flash (awaiting referee confirmation) */
+@keyframes pendingFlash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.15; }
+}
+
+.score-ippon.pending {
+  opacity: 1;
+  background: var(--warning);
+  color: #1a1a2e;
+  animation: pendingFlash 0.7s ease-in-out infinite;
+}
+
+.score-wazaari.pending {
+  background: var(--warning);
+  color: #1a1a2e;
+  transform: scale(1.08);
+  animation: pendingFlash 0.7s ease-in-out infinite;
+}
+
+.score-yuko.pending {
+  border-color: var(--warning);
+  background: rgba(245,158,11,0.15);
+  animation: pendingFlash 0.7s ease-in-out infinite;
+}
+
 /* No fight placeholder */
 .no-fight-placeholder {
   display: flex;
