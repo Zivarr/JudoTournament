@@ -2,14 +2,41 @@
   "name": "judotournament",
   "version": "1.0.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "electron:dev": "electron .",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
   },
   "dependencies": {
     "express": "^4.19.2",
     "qrcode": "^1.5.4",
     "uuid": "^10.0.0",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "nl.judotournament",
+    "productName": "Judo Tournament",
+    "files": [
+      "electron/**/*",
+      "server.js",
+      "src/**/*",
+      "public/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

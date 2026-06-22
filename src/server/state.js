@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const DATA_DIR = process.env.JUDO_DATA_DIR || path.join(__dirname, '..', '..', 'data');
 const ACTIVE_FILE = path.join(DATA_DIR, 'active.json');
 const LEGACY_FILE = path.join(DATA_DIR, 'tournament.json');
 
