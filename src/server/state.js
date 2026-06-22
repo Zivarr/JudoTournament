@@ -180,6 +180,7 @@ export function startClock(fightId, broadcastFn) {
     const now = Date.now();
     const elapsed = now - f.score.clock.runningAt;
 
+    // Golden score has no time limit and counts up; regular time counts down from storedRemainingMs.
     if (f.score.clock.goldenScore) {
       f.score.clock.elapsedGs = (f.score.clock.elapsedGs || 0) + 200;
     } else {
@@ -187,6 +188,8 @@ export function startClock(fightId, broadcastFn) {
     }
 
     // Check osaekomi — set pending score for referee to confirm
+    // IJF thresholds: 5s → yuko, 10s → waza-ari, 20s → ippon.
+    // pendingScore is staged here and committed only when the operator confirms via osaekomi:confirm.
     if (f.score.osaekomi && f.score.osaekomi.active && f.score.osaekomi.startedAt) {
       const osaElapsed = now - f.score.osaekomi.startedAt;
       const osa = f.score.osaekomi;

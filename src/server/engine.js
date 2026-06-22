@@ -346,12 +346,15 @@ function generateDoubleElim(category, competitors, fightDurationMs, tatami) {
     lbPrevFights = lbR1Fights;
     lbRound++;
 
-    // LB subsequent rounds paired with WB loser drop-ins
+    // Each WB round (after R1) generates two LB rounds:
+    //   "combined" round — LB survivors face losers dropping in from that WB round (count stays the same)
+    //   "reduced"  round — combined winners pair off, halving the field
+    // This continues until one LB survivor remains to face the WB finalist in the Grand Final.
     for (let wbIdx = 1; wbIdx < wbRounds.length - 1; wbIdx++) {
       const wbDropIns = wbRounds[wbIdx];
       const combinedFights = [];
 
-      // Match LB survivors against WB losers
+      // Combined round: LB survivor (prevLbFightId) vs incoming WB loser (loserOf)
       for (let i = 0; i < lbPrevFights.length; i++) {
         const fight = createEmptyFight(category.id, tatami, lbRound, `LB-R${lbRound}`, matchIndex, fightDurationMs);
         fight.bracketType = 'loser';
@@ -367,6 +370,7 @@ function generateDoubleElim(category, competitors, fightDurationMs, tatami) {
       lbPrevFights = combinedFights;
       lbRound++;
 
+      // Reduced round: pair up combined winners (skip if already down to 1)
       if (lbPrevFights.length > 1) {
         const reducedFights = [];
         for (let i = 0; i < lbPrevFights.length / 2; i++) {

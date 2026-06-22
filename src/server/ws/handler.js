@@ -156,6 +156,9 @@ export function handleConnection(ws, req) {
       }
 
       case 'osaekomi:confirm': {
+        // Commits the pendingScore staged by the clock tick into the official fight score.
+        // The operator confirms (or cancels) after the hold is broken, so scores are never
+        // applied automatically — a human always verifies the osaekomi was valid.
         if (!validatePin(pin)) { safeSend(ws, { type: 'error', message: 'wrongPin' }); return; }
         const { fightId } = msg;
         const fightIdx = state.fights.findIndex(f => f.id === fightId);
@@ -175,6 +178,7 @@ export function handleConnection(ws, req) {
           broadcastToTatami(fight.tatami, 'fight:osaekomi', { fightId, osaekomi: osa });
 
         } else if (osa.pendingScore === 'wazaAri') {
+          // Waza-ari supersedes the earlier yuko from the same hold — retract it first.
           if (osa.yukoAwarded) {
             fight.score[side].yuko = Math.max(0, (fight.score[side].yuko || 0) - 1);
             osa.yukoAwarded = false;
@@ -182,6 +186,7 @@ export function handleConnection(ws, req) {
           fight.score[side].wazaAri = (fight.score[side].wazaAri || 0) + 1;
           osa.wazaAriAwarded = true;
           osa.pendingScore = null;
+          // Two waza-ari = ippon (waza-ari-awasete-ippon), fight ends immediately.
           if (fight.score[side].wazaAri >= 2) {
             fight.score[side].ippon = true;
             fight.score.winner = side;
@@ -218,6 +223,8 @@ export function handleConnection(ws, req) {
         const tatamiNum = Number(tatami);
 
         // Find next pending fight for this tatami
+        // tatami may be stored as a number or string depending on how the fight was created;
+        // check both types to avoid missing fights after a category reassignment.
         const nextFight = state.fights.find(f =>
           (f.tatami === tatamiNum || f.tatami === String(tatamiNum)) &&
           f.status === 'pending' &&
