@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 
-export function applyScore(fight, event) {
-  const f = JSON.parse(JSON.stringify(fight)); // deep clone
+export function applyScore(fight, event, now = Date.now()) {
+  const f = structuredClone(fight);
   const { type, side } = event;
   const opponent = side === 'white' ? 'blue' : 'white';
 
   // Record history
   if (!f.scoreHistory) f.scoreHistory = [];
-  f.scoreHistory.push({ ...event, timestamp: Date.now() });
+  f.scoreHistory.push({ ...event, timestamp: now });
 
   switch (type) {
     case 'ippon':
@@ -63,7 +63,7 @@ export function applyScore(fight, event) {
 }
 
 export function replayScore(baseFight, history) {
-  let f = JSON.parse(JSON.stringify(baseFight));
+  let f = structuredClone(baseFight);
   // Reset score
   f.score.white = { ippon: false, wazaAri: 0, yuko: 0, shido: 0, hansokuMake: false };
   f.score.blue = { ippon: false, wazaAri: 0, yuko: 0, shido: 0, hansokuMake: false };
@@ -90,7 +90,7 @@ export function checkFightEnd(fight) {
 }
 
 export function applyOsaekomiTick(fight, elapsedMs) {
-  const f = JSON.parse(JSON.stringify(fight));
+  const f = structuredClone(fight);
   if (!f.score.osaekomi || !f.score.osaekomi.active) return f;
 
   const side = f.score.osaekomi.side;
@@ -150,7 +150,6 @@ function createEmptyFight(categoryId, tatami, round, roundName, matchIndex, figh
     roundName,
     matchIndex,
     whiteId: null,
-    blueid: null,
     blueId: null,
     status: 'pending',
     isBye: false,
