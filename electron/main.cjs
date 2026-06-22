@@ -9,7 +9,16 @@ app.whenReady().then(async () => {
   process.env.JUDO_DATA_DIR = app.getPath('userData');
 
   const { startServer } = await import('../server.js');
-  await startServer(3000);
+  try {
+    await startServer(3000);
+  } catch (e) {
+    const msg = e.code === 'EADDRINUSE'
+      ? 'Port 3000 is already in use.\n\nClose any other running instance of Judo Tournament and try again.'
+      : `Failed to start server: ${e.message}`;
+    dialog.showErrorBox('Judo Tournament — Startup Error', msg);
+    app.exit(1);
+    return;
+  }
 
   mainWindow = new BrowserWindow({
     width: 1280,

@@ -64,8 +64,10 @@ export async function startServer(port = process.env.PORT || 3000) {
   // Load state from disk
   load();
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    server.on('error', reject);
     server.listen(port, () => {
+      server.off('error', reject);
       console.log(`\nJudo Tournament System started!\n`);
       console.log(`Local:   http://localhost:${port}`);
 
