@@ -129,6 +129,7 @@ export function enterGoldenScore(fight) {
   f.score.clock.goldenScore = true;
   f.score.clock.remainingMs = 0;
   f.score.clock.storedRemainingMs = 0;
+  f.score.clock.storedElapsedGs = 0;
   f.score.clock.elapsedGs = 0;
   f.score.clock.running = false;
   f.score.clock.runningAt = null;
@@ -165,6 +166,7 @@ function createEmptyFight(categoryId, tatami, round, roundName, matchIndex, figh
         remainingMs: fightDurationMs || 240000,
         storedRemainingMs: fightDurationMs || 240000,
         goldenScore: false,
+        storedElapsedGs: 0,
         elapsedGs: 0
       },
       osaekomi: { active: false, side: null, startedAt: null, yukoAwarded: false, wazaAriAwarded: false, ipponAwarded: false }

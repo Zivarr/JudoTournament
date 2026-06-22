@@ -31,12 +31,18 @@ function tournamentFile(id) {
   return path.join(DATA_DIR, `${id}.json`);
 }
 
-export function save() {
+export async function save() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (!state.tournament) return;
-    fs.writeFileSync(tournamentFile(state.tournament.id), JSON.stringify(state, null, 2), 'utf8');
-    fs.writeFileSync(ACTIVE_FILE, JSON.stringify({ id: state.tournament.id }), 'utf8');
+    // Atomic write: write to .tmp then rename so a crash mid-write never corrupts the file.
+    const file = tournamentFile(state.tournament.id);
+    const tmp = file + '.tmp';
+    await fs.promises.writeFile(tmp, JSON.stringify(state, null, 2), 'utf8');
+    await fs.promises.rename(tmp, file);
+    const activeTmp = ACTIVE_FILE + '.tmp';
+    await fs.promises.writeFile(activeTmp, JSON.stringify({ id: state.tournament.id }), 'utf8');
+    await fs.promises.rename(activeTmp, ACTIVE_FILE);
   } catch (err) {
     console.error('Failed to save state:', err);
   }
@@ -181,8 +187,9 @@ export function startClock(fightId, broadcastFn) {
     const elapsed = now - f.score.clock.runningAt;
 
     // Golden score has no time limit and counts up; regular time counts down from storedRemainingMs.
+    // Both use the same pattern: stored snapshot + elapsed since last start, so interval jitter doesn't accumulate.
     if (f.score.clock.goldenScore) {
-      f.score.clock.elapsedGs = (f.score.clock.elapsedGs || 0) + 200;
+      f.score.clock.elapsedGs = (f.score.clock.storedElapsedGs || 0) + elapsed;
     } else {
       f.score.clock.remainingMs = Math.max(0, f.score.clock.storedRemainingMs - elapsed);
     }
@@ -210,6 +217,7 @@ export function startClock(fightId, broadcastFn) {
       f.score.clock.runningAt = Date.now();
       f.score.clock.storedRemainingMs = 0;
       f.score.clock.remainingMs = 0;
+      f.score.clock.storedElapsedGs = 0;
       f.score.clock.elapsedGs = 0;
       broadcastFn('fight:golden_score', { fightId, score: f.score });
     }
@@ -237,7 +245,8 @@ export function stopClock(fightId) {
       fight.score.clock.storedRemainingMs = Math.max(0, fight.score.clock.storedRemainingMs - elapsed);
       fight.score.clock.remainingMs = fight.score.clock.storedRemainingMs;
     } else {
-      fight.score.clock.elapsedGs = (fight.score.clock.elapsedGs || 0) + elapsed;
+      fight.score.clock.storedElapsedGs = (fight.score.clock.storedElapsedGs || 0) + elapsed;
+      fight.score.clock.elapsedGs = fight.score.clock.storedElapsedGs;
     }
     fight.score.clock.running = false;
     fight.score.clock.runningAt = null;
