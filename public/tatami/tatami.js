@@ -109,6 +109,7 @@ ws.on('fight:ended', (data) => {
   stopClockLoop();
   showWinner(data.winner, data.method, data.score);
   stopOsaekomiDisplay();
+  clearPendingFlash();
 });
 
 ws.on('bracket:updated', (data) => {
@@ -213,7 +214,7 @@ function updateScore(score) {
   updateShidos('blue', bs.shido || 0, !!bs.hansokuMake);
 
   if (score.clock) onClockUpdate(score.clock);
-  if (score.osaekomi) updateOsaekomi(score.osaekomi);
+  if (score.osaekomi && !score.osaekomi.active) updateOsaekomi(score.osaekomi);
   if (score.clock && score.clock.goldenScore) {
     document.getElementById('goldenScoreBanner').classList.add('show');
   }
@@ -303,10 +304,17 @@ function updateOsaekomi(osaekomi) {
   const bar = document.getElementById('osaekomiBar');
   const timer = document.getElementById('osaekomiTimer');
 
-  if (!osaekomi || !osaekomi.active) {
+  if (!osaekomi || (!osaekomi.active && !osaekomi.pendingScore)) {
     section.style.visibility = 'hidden';
     stopOsaekomiDisplay();
     clearPendingFlash();
+    return;
+  }
+
+  if (!osaekomi.active) {
+    // Osaekomi broken but pending score still waiting for confirmation
+    stopOsaekomiDisplay();
+    applyPendingFlash(osaekomi.side, osaekomi.pendingScore);
     return;
   }
 

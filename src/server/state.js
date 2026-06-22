@@ -261,6 +261,6 @@ export function stopOsaekomi(fightId) {
   if (fight.score.osaekomi) {
     fight.score.osaekomi.active = false;
     fight.score.osaekomi.startedAt = null;
-    fight.score.osaekomi.pendingScore = null;
+    // pendingScore is preserved so the client can show the confirmation UI
   }
 }

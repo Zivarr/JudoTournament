@@ -130,6 +130,7 @@ ws.on('fight:ended', (data) => {
   updateClockButton();
   showWinner(data.winner);
   stopOsaekomiDisplay();
+  clearPendingFlash();
   updateConfirmButton(null);
 });
 
@@ -223,7 +224,10 @@ function updateScore(score) {
   updateShidos('blue', bSide.shido || 0, !!bSide.hansokuMake);
 
   if (score.clock) onClockUpdate(score.clock);
-  if (score.osaekomi) updateOsaekomi(score.osaekomi);
+  // Only update osaekomi display when it becomes inactive; active pending state
+  // is owned by fight:clock and fight:osaekomi events to avoid race conditions
+  // where a stale clone clears a pending score the client is already showing.
+  if (score.osaekomi && !score.osaekomi.active) updateOsaekomi(score.osaekomi);
   if (score.clock && score.clock.goldenScore) {
     document.getElementById('goldenScoreBanner').classList.add('show');
   }
@@ -306,11 +310,19 @@ function updateOsaekomi(osaekomi) {
   const bar = document.getElementById('osaekomiBar');
   const timer = document.getElementById('osaekomiTimer');
 
-  if (!osaekomi || !osaekomi.active) {
+  if (!osaekomi || (!osaekomi.active && !osaekomi.pendingScore)) {
     section.style.visibility = 'hidden';
     stopOsaekomiDisplay();
     clearPendingFlash();
     updateConfirmButton(null);
+    return;
+  }
+
+  if (!osaekomi.active) {
+    // Osaekomi broken but pending score still waiting for confirmation
+    stopOsaekomiDisplay();
+    applyPendingFlash(osaekomi.side, osaekomi.pendingScore);
+    updateConfirmButton(osaekomi);
     return;
   }
 
@@ -375,7 +387,7 @@ function applyPendingFlash(side, pendingScore) {
 function updateConfirmButton(osaekomi) {
   const btn = document.getElementById('btnConfirmScore');
   if (!btn) return;
-  if (osaekomi && osaekomi.active && osaekomi.pendingScore) {
+  if (osaekomi && osaekomi.pendingScore) {
     const labels = { yuko: t('yuko'), wazaAri: t('wazaAri'), ippon: t('ippon') };
     const sideLabel = osaekomi.side === 'white' ? t('white') : t('blue');
     btn.textContent = `✔ ${labels[osaekomi.pendingScore] || osaekomi.pendingScore} (${sideLabel})`;
