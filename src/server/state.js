@@ -19,6 +19,9 @@ let state = {
 // Map<fightId, intervalId>
 export const activeClockIntervals = new Map();
 
+let saveInProgress = false;
+let savePending = false;
+
 export function getState() {
   return state;
 }
@@ -32,6 +35,11 @@ function tournamentFile(id) {
 }
 
 export async function save() {
+  if (saveInProgress) {
+    savePending = true;
+    return;
+  }
+  saveInProgress = true;
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (!state.tournament) return;
@@ -45,6 +53,12 @@ export async function save() {
     await fs.promises.rename(activeTmp, ACTIVE_FILE);
   } catch (err) {
     console.error('Failed to save state:', err);
+  } finally {
+    saveInProgress = false;
+    if (savePending) {
+      savePending = false;
+      save(); // trailing pass captures all mutations that arrived during the write
+    }
   }
 }
 
