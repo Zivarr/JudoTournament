@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background: navy blue rounded square -->
+  <rect width="512" height="512" rx="90" fill="#1E3A5F"/>
+
+  <!-- ── Main body silhouette (white) ── -->
+  <!-- Outer shape: shoulders, sleeves, body, pants -->
+  <path d="
+    M 256 90
+    L 198 112 L 112 112
+    L 56 168 L 56 208 L 120 208
+    L 98 462 L 414 462 L 392 208
+    L 456 208 L 456 168 L 400 112 L 314 112
+    Z
+  " fill="white"/>
+
+  <!-- ── V-neck opening (navy cutout) ── -->
+  <polygon points="256,90 314,112 256,248 198,112" fill="#1E3A5F"/>
+
+  <!-- ── Right lapel edge (the front panel going left-down) ── -->
+  <polygon points="314,112 295,112 256,248 256,310 275,310 314,168" fill="#D8E8F5" opacity="0.25"/>
+
+  <!-- ── Belt / obi (dark band) ── -->
+  <rect x="98" y="305" width="316" height="44" rx="5" fill="#0C2340"/>
+
+  <!-- ── Belt knot in center ── -->
+  <rect x="226" y="296" width="60" height="62" rx="6" fill="#0C2340"/>
+  <!-- Knot highlight lines -->
+  <line x1="256" y1="296" x2="256" y2="358" stroke="#1E3A5F" stroke-width="2.5"/>
+  <line x1="226" y1="327" x2="286" y2="327" stroke="#1E3A5F" stroke-width="2.5"/>
+
+  <!-- ── Cross-hatch diamond pattern on pants section (below belt) ── -->
+  <clipPath id="pants">
+    <rect x="98" y="349" width="316" height="113"/>
+  </clipPath>
+  <g clip-path="url(#pants)" stroke="#1E3A5F" stroke-width="5" opacity="0.35">
+    <!-- Diagonal lines (45°) -->
+    <line x1="98"  y1="349" x2="462" y2="462"/>
+    <line x1="98"  y1="390" x2="422" y2="462"/>
+    <line x1="98"  y1="430" x2="380" y2="462"/>
+    <line x1="140" y1="349" x2="462" y2="430"/>
+    <line x1="190" y1="349" x2="462" y2="390"/>
+    <line x1="244" y1="349" x2="462" y2="349"/>
+    <!-- Counter-diagonal lines (135°) -->
+    <line x1="462" y1="349" x2="98"  y2="462"/>
+    <line x1="462" y1="390" x2="140" y2="462"/>
+    <line x1="462" y1="430" x2="180" y2="462"/>
+    <line x1="420" y1="349" x2="98"  y2="430"/>
+    <line x1="370" y1="349" x2="98"  y2="390"/>
+    <line x1="316" y1="349" x2="98"  y2="349"/>
+  </g>
+</svg>
