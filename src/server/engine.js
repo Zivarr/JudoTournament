@@ -125,7 +125,7 @@ export function applyOsaekomiTick(fight, elapsedMs) {
 }
 
 export function enterGoldenScore(fight) {
-  const f = JSON.parse(JSON.stringify(fight));
+  const f = structuredClone(fight);
   f.score.clock.goldenScore = true;
   f.score.clock.remainingMs = 0;
   f.score.clock.storedRemainingMs = 0;
@@ -262,7 +262,7 @@ function generateDoubleElim(category, competitors, fightDurationMs, tatami) {
   const bracketSize = nextPowerOf2(n);
   const byeCount = bracketSize - n;
 
-  // Seed competitors — first byeCount get byes
+  // Preserve registration order. Standard seeded bracket placement (1v8, 2v7, etc.) is not implemented.
   const seeded = [...competitors];
 
   // Winner bracket: R1 has bracketSize/2 slots
