@@ -40,7 +40,13 @@
     },
     "linux": {
       "target": "AppImage",
-      "icon": "build/icon.png"
-    }
+      "icon": "build/icon.png",
+      "category": "Sports",
+      "desktop": {
+        "Name": "Judo Tournament",
+        "Comment": "Judo tournament management system"
+      }
+    },
+    "syncDesktopName": true
   }
 }
