@@ -1,5 +1,6 @@
 import { WsClient, getWsUrl } from '/shared/ws-client.js';
 import { t, setLang, getLang, applyTranslations } from '/shared/i18n.js';
+import { initKeyboardControl } from '/shared/keymap.js';
 
 // Tatami number from URL
 const pathParts = window.location.pathname.split('/');
@@ -305,6 +306,29 @@ window.refereeDecision = function(side) {
 window.nextFight = function() {
   ws.send('fight:next', { pin, tatami: tatamiNum });
 };
+
+// ---- Keyboard control ----
+initKeyboardControl({
+  clockToggle: () => window.clockAction(),
+  scoreIpponWhite: () => window.score('ippon', 'white'),
+  scoreIpponBlue: () => window.score('ippon', 'blue'),
+  scoreWazaAriWhite: () => window.score('wazaari', 'white'),
+  scoreWazaAriBlue: () => window.score('wazaari', 'blue'),
+  scoreYukoWhite: () => window.score('yuko', 'white'),
+  scoreYukoBlue: () => window.score('yuko', 'blue'),
+  scoreShidoWhite: () => window.score('shido', 'white'),
+  scoreShidoBlue: () => window.score('shido', 'blue'),
+  scoreHansokuWhite: () => window.score('hansoku', 'white'),
+  scoreHansokuBlue: () => window.score('hansoku', 'blue'),
+  osaekomiWhite: () => window.osaekomi('white'),
+  osaekomiBlue: () => window.osaekomi('blue'),
+  osaekomiBreak: () => window.osaekomiBreak(),
+  osaekomiConfirm: () => window.confirmOsaekomi(),
+  undo: () => window.undo(),
+  nextFight: () => window.nextFight(),
+  refereeDecisionWhite: () => window.refereeDecision('white'),
+  refereeDecisionBlue: () => window.refereeDecision('blue'),
+});
 
 // ---- Init ----
 updateLangButtons();

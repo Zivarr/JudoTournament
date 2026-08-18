@@ -116,6 +116,15 @@ const translations = {
     categoryDrawnWarning: "Loting al gegenereerd — verplaatsen geblokkeerd",
     categoryLocked: "Categorie vergrendeld (loting gegenereerd)",
     confirmScore: "Bevestig score",
+    keyboardShortcuts: "Toetsenbord sneltoetsen",
+    clockToggle: "Klok starten/stoppen",
+    resetAll: "Alles resetten",
+    close: "Sluiten",
+    reset: "Reset",
+    pressKey: "Druk op een toets…",
+    unassigned: "Niet toegewezen",
+    other: "Overig",
+    keymapHint: "Klik op een toets om deze te wijzigen. Werkt niet terwijl je in een tekstveld typt.",
   },
   en: {
     admin: "Admin",
@@ -234,6 +243,15 @@ const translations = {
     categoryDrawnWarning: "Draw already generated — moving blocked",
     categoryLocked: "Category locked (draw generated)",
     confirmScore: "Confirm score",
+    keyboardShortcuts: "Keyboard shortcuts",
+    clockToggle: "Start/stop clock",
+    resetAll: "Reset all",
+    close: "Close",
+    reset: "Reset",
+    pressKey: "Press a key…",
+    unassigned: "Unassigned",
+    other: "Other",
+    keymapHint: "Click a key to rebind it. Disabled while typing in a text field.",
   }
 };
 
