@@ -249,7 +249,7 @@ function updateClockButton() {
 function updateConfirmButton(osaekomi) {
   const btn = document.getElementById('btnConfirmScore');
   if (!btn) return;
-  if (osaekomi && osaekomi.active && osaekomi.pendingScore) {
+  if (osaekomi && osaekomi.pendingScore) {
     const labels = { yuko: t('yuko'), wazaAri: t('wazaAri'), ippon: t('ippon') };
     const sideLabel = osaekomi.side === 'white' ? t('white') : t('blue');
     btn.textContent = `✔ ${labels[osaekomi.pendingScore] || osaekomi.pendingScore} (${sideLabel})`;
