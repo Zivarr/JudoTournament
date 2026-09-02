@@ -17,6 +17,69 @@ function validatePin(pin) {
   return state.tournament.adminPin === String(pin);
 }
 
+// Updates arrive as raw WS messages, so only known fields may be copied onto a
+// record. Spreading the message wholesale used to persist `type` and `pin`,
+// leaking the admin PIN to every client through state broadcasts.
+const COMPETITOR_FIELDS = ['name', 'club', 'gender', 'weightKg', 'birthYear', 'actualWeightKg'];
+const CATEGORY_FIELDS = ['name', 'gender', 'ageCategory', 'maxWeight', 'competitorIds',
+                         'tatami', 'tatami2', 'format', 'status', 'fightDurationMs'];
+
+function pickFields(source, allowed) {
+  const out = {};
+  for (const key of allowed) {
+    if (source[key] !== undefined) out[key] = source[key];
+  }
+  return out;
+}
+
+function recordEvent(fight, event) {
+  if (!fight.scoreHistory) fight.scoreHistory = [];
+  fight.scoreHistory.push({ ...event, timestamp: Date.now() });
+}
+
+// Shared end-of-fight bookkeeping: propagate the winner into the bracket and
+// recompute pool standings. Every path that sets `status = 'ended'` must call this,
+// otherwise the result never leaves the fight it happened on.
+function finishFight(fight) {
+  const state = getState();
+  const { updatedFights, updatedPools } = engine.advanceFight(fight, state.fights, state.pools);
+  setState({ fights: updatedFights, pools: updatedPools });
+  broadcastAll('bracket:updated', { categoryId: fight.categoryId, pools: updatedPools, fights: updatedFights });
+}
+
+// Called by the clock when regulation time hits zero. Under IJF/JBN rules a score
+// difference decides the contest there and then; only a level score goes to golden
+// score. Returns true when the fight was ended so the clock stops counting.
+function endFightOnTime(fightId) {
+  const state = getState();
+  const fight = state.fights.find(f => f.id === fightId);
+  if (!fight) return false;
+  if (fight.status === 'ended') return true;
+
+  const leader = engine.scoreLeader(fight.score);
+  if (!leader) return false;
+
+  recordEvent(fight, { type: 'time-decision', side: leader.side, method: leader.method });
+  fight.score.winner = leader.side;
+  fight.score.method = leader.method;
+  fight.status = 'ended';
+  stopClock(fightId);
+  stopOsaekomi(fightId);
+
+  const winnerId = leader.side === 'white' ? fight.whiteId : fight.blueId;
+  broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
+  broadcastToTatami(fight.tatami, 'fight:ended', {
+    fightId,
+    winner: leader.side,
+    winnerId,
+    method: leader.method,
+    score: fight.score
+  });
+  finishFight(fight);
+  save();
+  return true;
+}
+
 function makeClockBroadcaster(tatami) {
   return function(event, data) {
     broadcastToTatami(tatami, event, data);
@@ -59,7 +122,7 @@ export function handleConnection(ws, req) {
         fight.status = 'active';
         startClock(fightId, (event, data) => {
           broadcastToTatami(fight.tatami, event, data);
-        });
+        }, endFightOnTime);
         broadcastToTatami(fight.tatami, 'clock:started', { fightId, clock: fight.score.clock });
         save();
         break;
@@ -106,10 +169,7 @@ export function handleConnection(ws, req) {
             score: updatedFight.score
           });
 
-          // Advance bracket
-          const { updatedFights, updatedPools } = engine.advanceFight(updatedFight, state.fights, state.pools);
-          setState({ fights: updatedFights, pools: updatedPools });
-          broadcastAll('bracket:updated', { categoryId: updatedFight.categoryId, pools: updatedPools, fights: updatedFights });
+          finishFight(updatedFight);
         }
 
         save();
@@ -171,6 +231,7 @@ export function handleConnection(ws, req) {
         const { side } = osa;
 
         if (osa.pendingScore === 'yuko') {
+          recordEvent(fight, { type: 'yuko', side, source: 'osaekomi' });
           fight.score[side].yuko = (fight.score[side].yuko || 0) + 1;
           osa.yukoAwarded = true;
           osa.pendingScore = null;
@@ -179,10 +240,13 @@ export function handleConnection(ws, req) {
 
         } else if (osa.pendingScore === 'wazaAri') {
           // Waza-ari supersedes the earlier yuko from the same hold — retract it first.
+          // The retraction is recorded too, so replaying the history reproduces it.
           if (osa.yukoAwarded) {
+            recordEvent(fight, { type: 'retract-yuko', side, source: 'osaekomi' });
             fight.score[side].yuko = Math.max(0, (fight.score[side].yuko || 0) - 1);
             osa.yukoAwarded = false;
           }
+          recordEvent(fight, { type: 'wazaari', side, source: 'osaekomi' });
           fight.score[side].wazaAri = (fight.score[side].wazaAri || 0) + 1;
           osa.wazaAriAwarded = true;
           osa.pendingScore = null;
@@ -195,13 +259,20 @@ export function handleConnection(ws, req) {
             stopClock(fightId);
             stopOsaekomi(fightId);
             broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
-            broadcastToTatami(fight.tatami, 'fight:ended', { fightId, winner: fight.score.winner, method: fight.score.method, score: fight.score });
+            broadcastToTatami(fight.tatami, 'fight:ended', {
+              fightId,
+              winner: fight.score.winner,
+              winnerId: fight.score.winner === 'white' ? fight.whiteId : fight.blueId,
+              method: fight.score.method,
+              score: fight.score
+            });
           } else {
             broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
             broadcastToTatami(fight.tatami, 'fight:osaekomi', { fightId, osaekomi: osa });
           }
 
         } else if (osa.pendingScore === 'ippon') {
+          recordEvent(fight, { type: 'ippon', side, source: 'osaekomi' });
           fight.score[side].ippon = true;
           fight.score.winner = side;
           fight.score.method = 'ippon';
@@ -211,8 +282,19 @@ export function handleConnection(ws, req) {
           stopClock(fightId);
           stopOsaekomi(fightId);
           broadcastToTatami(fight.tatami, 'fight:score', { fightId, score: fight.score });
-          broadcastToTatami(fight.tatami, 'fight:ended', { fightId, winner: fight.score.winner, method: fight.score.method, score: fight.score });
+          broadcastToTatami(fight.tatami, 'fight:ended', {
+            fightId,
+            winner: fight.score.winner,
+            winnerId: fight.score.winner === 'white' ? fight.whiteId : fight.blueId,
+            method: fight.score.method,
+            score: fight.score
+          });
         }
+
+        // A confirmed osaekomi can end the fight (ippon, or waza-ari-awasete-ippon),
+        // so the winner still has to reach the next bracket fight and the standings.
+        if (fight.status === 'ended') finishFight(fight);
+
         save();
         break;
       }
@@ -288,6 +370,8 @@ export function handleConnection(ws, req) {
         const fight = state.fights[fightIdx];
         if (fight.status === 'ended') return;
 
+        // Recorded so score:undo can replay past it instead of silently dropping it.
+        recordEvent(fight, { type: 'referee-decision', side });
         fight.score.winner = side;
         fight.score.method = 'referee-decision';
         fight.status = 'ended';
@@ -304,16 +388,17 @@ export function handleConnection(ws, req) {
           score: fight.score
         });
 
-        const { updatedFights, updatedPools } = engine.advanceFight(fight, state.fights, state.pools);
-        setState({ fights: updatedFights, pools: updatedPools });
-        broadcastAll('bracket:updated', { categoryId: fight.categoryId, pools: updatedPools, fights: updatedFights });
+        finishFight(fight);
         save();
         break;
       }
 
       case 'admin:create_tournament': {
-        if (!validatePin(pin) && !(state.tournament === null && pin !== undefined)) {
-          // Allow first creation with any pin
+        // Creating a tournament replaces the active one, so it needs the current
+        // admin PIN. Only the very first run, with nothing loaded, is open.
+        if (state.tournament && !validatePin(pin)) {
+          safeSend(ws, { type: 'error', message: 'wrongPin' });
+          return;
         }
         const { name, date, tatamiCount, fightDurationMs, adminPin } = msg;
         const tournament = {
@@ -355,7 +440,7 @@ export function handleConnection(ws, req) {
         if (!validatePin(pin)) { safeSend(ws, { type: 'error', message: 'wrongPin' }); return; }
         const idx = state.competitors.findIndex(c => c.id === msg.id);
         if (idx === -1) return;
-        state.competitors[idx] = { ...state.competitors[idx], ...msg };
+        state.competitors[idx] = { ...state.competitors[idx], ...pickFields(msg, COMPETITOR_FIELDS) };
         broadcastAll('competitor:updated', { competitor: state.competitors[idx] });
         save();
         break;
@@ -409,7 +494,7 @@ export function handleConnection(ws, req) {
         if (!validatePin(pin)) { safeSend(ws, { type: 'error', message: 'wrongPin' }); return; }
         const idx = state.categories.findIndex(c => c.id === msg.id);
         if (idx === -1) return;
-        state.categories[idx] = { ...state.categories[idx], ...msg };
+        state.categories[idx] = { ...state.categories[idx], ...pickFields(msg, CATEGORY_FIELDS) };
         broadcastAll('category:updated', { category: state.categories[idx] });
         save();
         break;

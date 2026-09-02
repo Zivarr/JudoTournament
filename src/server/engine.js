@@ -55,11 +55,46 @@ export function applyScore(fight, event, now = Date.now()) {
       f.score.clock.running = false;
       break;
 
+    case 'retract-yuko':
+      // Osaekomi upgrade: the yuko given at 5s is superseded by the waza-ari at 10s.
+      f.score[side].yuko = Math.max(0, (f.score[side].yuko || 0) - 1);
+      break;
+
+    case 'referee-decision':
+      f.score.winner = side;
+      f.score.method = 'referee-decision';
+      f.status = 'ended';
+      f.score.clock.running = false;
+      break;
+
+    case 'time-decision':
+      // Regulation time ran out with a score difference: the leader wins on that score.
+      f.score.winner = side;
+      f.score.method = event.method || 'referee-decision';
+      f.status = 'ended';
+      f.score.clock.running = false;
+      break;
+
     default:
       break;
   }
 
   return f;
+}
+
+// Judo scores do not accumulate across levels: a single waza-ari beats any number
+// of yuko. Shido never scores for the opponent, so it is not compared here.
+// Returns { side, method } for the leader, or null when the score is level.
+export function scoreLeader(score) {
+  const w = score.white || {};
+  const b = score.blue || {};
+  if ((w.wazaAri || 0) !== (b.wazaAri || 0)) {
+    return { side: (w.wazaAri || 0) > (b.wazaAri || 0) ? 'white' : 'blue', method: 'waza-ari' };
+  }
+  if ((w.yuko || 0) !== (b.yuko || 0)) {
+    return { side: (w.yuko || 0) > (b.yuko || 0) ? 'white' : 'blue', method: 'yuko' };
+  }
+  return null;
 }
 
 export function replayScore(baseFight, history) {

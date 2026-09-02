@@ -75,6 +75,16 @@ function pauseRunningClocks(loadedState) {
   }
 }
 
+// Older builds spread the raw WS message onto competitor and category records,
+// persisting `type` and the admin `pin`. Strip them on load so an existing data
+// file stops leaking the PIN through state broadcasts.
+function stripLeakedMessageFields(records) {
+  for (const record of records) {
+    delete record.type;
+    delete record.pin;
+  }
+}
+
 function applyLoaded(loaded) {
   state = {
     tournament: loaded.tournament || null,
@@ -84,6 +94,8 @@ function applyLoaded(loaded) {
     fights: loaded.fights || [],
     activeFightByTatami: loaded.activeFightByTatami || {}
   };
+  stripLeakedMessageFields(state.competitors);
+  stripLeakedMessageFields(state.categories);
   pauseRunningClocks(state);
 }
 
@@ -170,7 +182,9 @@ export function activateTournament(id) {
   }
 }
 
-export function startClock(fightId, broadcastFn) {
+// onTimeExpired is called when regulation time reaches zero; it returns true when
+// the fight was decided on score there and then, and false to go to golden score.
+export function startClock(fightId, broadcastFn, onTimeExpired) {
   if (activeClockIntervals.has(fightId)) {
     return; // already running
   }
@@ -224,8 +238,18 @@ export function startClock(fightId, broadcastFn) {
       }
     }
 
-    // Check time expiry
-    if (!f.score.clock.goldenScore && f.score.clock.remainingMs <= 0) {
+    // Check time expiry. A score difference decides the contest at time; golden
+    // score only breaks a genuine tie. The caller ends the fight and stops this
+    // clock, so there is nothing left to tick.
+    //
+    // A hold still running — or a hold score still waiting to be confirmed —
+    // carries past the bell: the contest continues until it resolves. The clock
+    // sits at zero and this is re-checked every tick, so the decision simply
+    // happens once the hold is done.
+    const hold = f.score.osaekomi;
+    const holdUnresolved = hold && (hold.active || hold.pendingScore);
+    if (!f.score.clock.goldenScore && f.score.clock.remainingMs <= 0 && !holdUnresolved) {
+      if (onTimeExpired && onTimeExpired(fightId)) return;
       f.score.clock.goldenScore = true;
       f.score.clock.running = true;
       f.score.clock.runningAt = Date.now();

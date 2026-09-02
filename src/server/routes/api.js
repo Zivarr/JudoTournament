@@ -46,7 +46,14 @@ router.post('/tournaments/:id/activate', express.json(), (req, res) => {
 
 // POST /api/tournament  (create new tournament — always creates, never updates)
 router.post('/tournament', express.json(), (req, res) => {
-  const { name, date, tatamiCount, fightDurationMs, adminPin } = req.body;
+  const state = getState();
+  const { name, date, tatamiCount, fightDurationMs, adminPin, pin } = req.body;
+
+  // This wipes the active tournament, so it needs the current admin PIN.
+  // Only the very first run, with nothing loaded, is open.
+  if (state.tournament && state.tournament.adminPin !== String(pin)) {
+    return res.status(403).json({ error: 'wrongPin' });
+  }
 
   const tournament = {
     id: uuidv4(),

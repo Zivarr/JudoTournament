@@ -547,9 +547,9 @@ window.createTournament = function() {
   const fightDurationMs = Number(document.getElementById('tFightDuration').value) || 240000;
   const adminPin = document.getElementById('tAdminPin').value.trim() || '1234';
 
+  ws.send('admin:create_tournament', { name, date, tatamiCount, fightDurationMs, adminPin, pin });
   pin = adminPin;
   sessionStorage.setItem('adminPin', pin);
-  ws.send('admin:create_tournament', { name, date, tatamiCount, fightDurationMs, adminPin, pin });
 };
 
 window.toggleAddCompetitor = function() {
